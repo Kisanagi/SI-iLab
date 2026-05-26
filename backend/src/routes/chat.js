@@ -1,0 +1,244 @@
+const { Router } = require("express");
+const { groqReasoning, groqVision } = require("../lib/groq");
+const supabase = require("../lib/supabase");
+const { toolDefinitions, toolHandlers } = require("../tools/index");
+const pdfParse = require("pdf-parse");
+
+const router = Router();
+
+const SYSTEM_PROMPT = `Kamu adalah asisten sistem informasi laboratorium iLab yang membantu mahasiswa.
+Jawab pertanyaan umum (jam lab, aturan, prosedur) langsung dari knowledge base yang tersedia.
+Jika informasi tidak ada di knowledge base, sampaikan bahwa kamu tidak memiliki informasi tersebut.
+Jika mahasiswa memerlukan tindakan admin, kumpulkan semua data yang diperlukan terlebih dahulu sebelum memanggil tool buat_tiket.
+Khusus kategori Enrollment (course belum muncul/terdaftar), tanyakan semua data berikut dalam satu pesan sekaligus: 
+Nama : 
+NPM : 
+Kelas : 
+Email : 
+No HP : 
+Nama Praktikum : 
+Kode Mata Kuliah : 
+Tunggu mahasiswa mengisi semua data tersebut, baru buat tiket. Jangan buat tiket jika ada data yang belum diisi.
+
+Khusus kategori Pendaftaran Pengulangan Praktikum, Pengulangan Praktikum, Ngulang Praktikum (Apapun Chat mahasiswa untuk Mengulang Praktikum). WAJIB tampilkan dulu isi prosedur pengulangan praktikum dari knowledge base secara langsung TANPA kalimat pembuka seperti "Berikut prosedur..." atau "Berdasarkan knowledge base..." - langsung tulis isi prosedurnya saja. Setelah menampilkan prosedur, minta mahasiswa mengisi format berikut dalam satu pesan sekaligus:
+Format data diri:
+Nama:
+NPM:
+Email:
+Kelas Asli:
+Kelas Pengulangan:
+Praktikum yang diulang:
+Kode Mata Kuliah:
+(Kode mata kuliah dapat dilihat di KRS)
+
+Tunggu mahasiswa mengisi semua data tersebut, baru buat tiket. Jangan buat tiket jika ada data yang belum diisi.
+PENTING untuk kategori Pendaftaran Pengulangan Praktikum: mahasiswa WAJIB melampirkan file KRS (PDF). Jika belum upload KRS, minta mahasiswa upload KRS terlebih dahulu sebelum tiket dibuat. Jangan buat tiket pengulangan tanpa KRS.
+Jika mahasiswa melampirkan gambar, gunakan deskripsi gambar yang diberikan untuk memahami permasalahan mereka.
+Jika mahasiswa melampirkan file PDF KRS, lakukan hal berikut secara WAJIB:
+1. Bandingkan NPM yang diisi mahasiswa di form dengan NPM yang tertera di KRS. Jika berbeda, TOLAK dan minta mahasiswa memastikan kembali datanya. JANGAN buat tiket.
+2. Bandingkan Nama yang diisi mahasiswa di form dengan Nama yang tertera di KRS. Jika berbeda, TOLAK dan minta klarifikasi. JANGAN buat tiket.
+3. Pastikan mata kuliah yang ingin diulang benar-benar tercantum di KRS. Jika tidak ada, TOLAK dan beritahu mahasiswa bahwa mata kuliah tersebut tidak ditemukan di KRS mereka. JANGAN buat tiket.
+4. Hanya jika NPM, Nama, dan mata kuliah semuanya COCOK antara form dan KRS, baru boleh membuat tiket.
+Setelah tiket berhasil dibuat, sampaikan nomor tiket kepada mahasiswa dan WAJIB minta mereka untuk menyimpan atau mencatat nomor tiket tersebut karena diperlukan untuk mengecek status tiket nantinya.
+Jika mahasiswa ingin cek status tiket, minta nomor tiket atau NPM lalu panggil tool cek_status.
+Selalu balas ramah dalam Bahasa Indonesia.
+Jangan jawab pertanyaan diluar lab iLab. Tolak dengan sopan dan jelaskan bahwa kamu hanya bisa membantu terkait iLab.
+PENTING: Balas dalam teks biasa tanpa format Markdown. Jangan gunakan simbol **, *, #, -, atau tanda formatting lainnya. Tulis seperti percakapan natural sehari-hari.
+Kalau mahasiswa tidak jadi melakukan tindakan yang memerlukan tiket jangan bilang tidak ada tiket yang dibuat, cukup akhiri percakapan dengan baik tanpa menyebut soal tiket. `;
+
+const MODEL_REASONING = process.env.MODEL_REASONING;
+const MODEL_VISION = process.env.MODEL_VISION;
+
+async function fetchKnowledgeBase() {
+  const { data, error } = await supabase
+    .from("knowledge_base")
+    .select("topik, konten")
+    .order("topik", { ascending: true });
+
+  if (error || !data || data.length === 0) return "";
+
+  const kbText = data.map((k) => `- ${k.topik}: ${k.konten}`).join("\n");
+  return `\n\nKNOWLEDGE BASE:\n${kbText}`;
+}
+
+async function simpanPesan(npm, role, content) {
+  if (!npm) return;
+  await supabase.from("chat_sessions").insert({ npm, role, content });
+}
+
+async function uploadKrsToStorage(base64, npm) {
+  const buffer = Buffer.from(base64, "base64");
+  const fileName = `${npm}_${Date.now()}.pdf`;
+  const { error } = await supabase.storage
+    .from("KRS-File")
+    .upload(fileName, buffer, {
+      contentType: "application/pdf",
+      upsert: false,
+    });
+  if (error) throw new Error(`Gagal upload KRS: ${error.message}`);
+  return fileName;
+}
+
+async function processFile(file) {
+  if (!file) return null;
+
+  if (file.type === "pdf") {
+    const buffer = Buffer.from(file.base64, "base64");
+    const pdfData = await pdfParse(buffer);
+    return { text: pdfData.text, buffer };
+  }
+
+  if (file.type === "image") {
+    const visionResponse = await groqVision.chat.completions.create({
+      model: MODEL_VISION,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Deskripsikan isi gambar ini secara detail dalam Bahasa Indonesia. Jika ada teks, tuliskan semua teksnya.",
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:${file.mimeType};base64,${file.base64}`,
+              },
+            },
+          ],
+        },
+      ],
+    });
+    const description = visionResponse.choices[0].message.content;
+    return `\n\n[Mahasiswa melampirkan gambar dengan deskripsi berikut:]\n${description}`;
+  }
+
+  return null;
+}
+
+router.post("/", async (req, res) => {
+  const { messages, npm, file } = req.body;
+
+  if (!messages || !Array.isArray(messages)) {
+    return res
+      .status(400)
+      .json({ error: "Field messages (array) wajib diisi" });
+  }
+
+  try {
+    const kbText = await fetchKnowledgeBase();
+
+    // Proses file jika ada
+    let fileContext = null;
+    let krsStoragePath = null;
+    if (file) {
+      try {
+        const result = await processFile(file);
+        if (file.type === "pdf" && result) {
+          // Upload ke storage segera
+          try {
+            krsStoragePath = await uploadKrsToStorage(
+              file.base64,
+              npm || "unknown",
+            );
+          } catch (err) {
+            console.error("Gagal upload KRS:", err);
+          }
+          fileContext = `\n\n[Mahasiswa melampirkan file PDF KRS dengan isi berikut:]\n${result.text}${krsStoragePath ? `\n[krs_path: ${krsStoragePath}]` : ""}`;
+        } else {
+          fileContext = result;
+        }
+      } catch (err) {
+        console.error("Error memproses file:", err);
+        return res
+          .status(400)
+          .json({ error: "Gagal memproses file yang dikirim" });
+      }
+    }
+
+    // Bersihkan field frontend-only dan gabungkan konteks file
+    const processedMessages = messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
+    if (fileContext && processedMessages.length > 0) {
+      const lastMsg = processedMessages[processedMessages.length - 1];
+      if (lastMsg.role === "user") {
+        processedMessages[processedMessages.length - 1] = {
+          role: lastMsg.role,
+          content:
+            (lastMsg.content ? lastMsg.content + "\n" : "") + fileContext,
+        };
+      }
+    }
+
+    const conversation = [
+      { role: "system", content: SYSTEM_PROMPT + kbText },
+      ...processedMessages,
+    ];
+
+    const response = await groqReasoning.chat.completions.create({
+      model: MODEL_REASONING,
+      messages: conversation,
+      tools: toolDefinitions,
+      tool_choice: "auto",
+    });
+
+    const choice = response.choices[0];
+
+    const lastUserMessage = messages[messages.length - 1];
+    if (lastUserMessage?.role === "user") {
+      await simpanPesan(npm, "user", lastUserMessage.content);
+    }
+
+    if (!choice.message.tool_calls || choice.message.tool_calls.length === 0) {
+      const reply = choice.message.content;
+      await simpanPesan(npm, "assistant", reply);
+      return res.json({ reply });
+    }
+
+    const toolCallMessages = [choice.message];
+
+    for (const toolCall of choice.message.tool_calls) {
+      const fnName = toolCall.function.name;
+      const fnArgs = JSON.parse(toolCall.function.arguments);
+
+      const handler = toolHandlers[fnName];
+      if (!handler) {
+        return res.status(500).json({ error: `Tool tidak dikenal: ${fnName}` });
+      }
+
+      let toolResult;
+      try {
+        // Inject krs_url dari storage jika ada dan tool adalah buat_tiket
+        if (fnName === "buat_tiket" && krsStoragePath) {
+          fnArgs.krs_url = krsStoragePath;
+        }
+        toolResult = await handler(fnArgs);
+      } catch (err) {
+        toolResult = { error: err.message };
+      }
+
+      toolCallMessages.push({
+        role: "tool",
+        tool_call_id: toolCall.id,
+        content: JSON.stringify(toolResult),
+      });
+    }
+
+    const finalResponse = await groqReasoning.chat.completions.create({
+      model: MODEL_REASONING,
+      messages: [...conversation, ...toolCallMessages],
+    });
+
+    const reply = finalResponse.choices[0].message.content;
+    await simpanPesan(npm, "assistant", reply);
+    res.json({ reply });
+  } catch (err) {
+    console.error("Error pada /chat:", err);
+    res.status(500).json({ error: "Terjadi kesalahan pada server" });
+  }
+});
+
+module.exports = router;
