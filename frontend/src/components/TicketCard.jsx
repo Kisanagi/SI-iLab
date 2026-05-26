@@ -78,18 +78,18 @@ export default function TicketCard({ ticket, onUpdated }) {
       {detailEntries.length > 0 && (
         <div className="bg-gray-50 rounded-lg p-3 mb-3 text-sm">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Detail</p>
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
             {detailEntries.map(([key, val]) => (
-              <div key={key} className="contents">
-                <dt className="text-gray-500 capitalize">{key.replace(/_/g, ' ')}</dt>
-                <dd className="text-gray-800 font-medium">{String(val)}</dd>
+              <div key={key} className="flex flex-col">
+                <dt className="text-gray-500 capitalize text-xs">{key.replace(/_/g, ' ')}</dt>
+                <dd className="text-gray-800 font-medium text-sm break-words">{String(val)}</dd>
               </div>
             ))}
           </dl>
         </div>
       )}
 
-      <div className="flex items-center justify-between mt-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-2">
         <div className="flex items-center gap-2">
           <label className="text-sm text-gray-600 shrink-0">Ubah status:</label>
           <select

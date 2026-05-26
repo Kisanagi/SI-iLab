@@ -158,16 +158,16 @@ export default function AdminDashboard() {
 
       <div className="flex-1 overflow-hidden max-w-4xl w-full mx-auto px-4 py-5 flex flex-col">
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-5 shrink-0">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-5 shrink-0">
           {stats.map(({ label, count }) => (
             <div
               key={label}
-              className={`bg-white rounded-xl border ${STAT_STYLE[label].card} p-4 shadow-sm flex flex-col items-center`}
+              className={`bg-white rounded-xl border ${STAT_STYLE[label].card} p-3 sm:p-4 shadow-sm flex flex-col items-center`}
             >
               <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full mb-2 ${STAT_STYLE[label].badge}`}>
                 {label}
               </span>
-              <p className={`text-3xl font-bold ${STAT_STYLE[label].num}`}>{count}</p>
+              <p className={`text-2xl sm:text-3xl font-bold ${STAT_STYLE[label].num}`}>{count}</p>
             </div>
           ))}
         </div>
