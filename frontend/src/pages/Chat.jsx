@@ -180,7 +180,7 @@ export default function Chat() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col bg-gray-50" style={{ height: '100dvh' }}>
       {/* Popup NPM */}
       {showNpmPopup && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
