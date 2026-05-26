@@ -51,7 +51,7 @@ async function buatTiket({ npm, nama_mahasiswa, judul, kategori, ringkasan, pesa
       kode_tiket,
       ...(krs_url ? { krs_url } : {}),
     })
-    .select('id, created_at')
+    .select('id, kode_tiket, created_at')
     .single();
 
   if (error) throw new Error(`Gagal membuat tiket: ${error.message}`);
