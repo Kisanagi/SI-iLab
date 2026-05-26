@@ -11,7 +11,7 @@ const knowledgeBaseRouter = require('./routes/knowledge-base');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+app.use(cors({ origin: 'https://si-ilab.vercel.app' }));
 app.use(express.json({ limit: '20mb' }));
 
 app.use('/chat', chatRouter);
