@@ -151,7 +151,7 @@ export default function Chat() {
     setLoading(true);
 
     try {
-      const history = nextMessages.filter((m) => m !== GREETING).slice(-20);
+      const history = nextMessages.filter((m) => m !== GREETING).slice(-10);
       const payload = { messages: history, npm };
       if (fileToSend) {
         payload.file = {
