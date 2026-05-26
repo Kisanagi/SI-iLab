@@ -59,6 +59,10 @@ export default function Chat() {
     e.preventDefault();
     const trimmed = npmInput.trim();
     if (!trimmed) return;
+    if (!/^\d{8}$/.test(trimmed)) {
+      alert("NPM harus berupa 8 digit angka.");
+      return;
+    }
     localStorage.setItem("npm", trimmed);
     setNpm(trimmed);
     setShowNpmPopup(false);
