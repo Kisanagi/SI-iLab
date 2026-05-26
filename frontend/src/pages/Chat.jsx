@@ -452,13 +452,6 @@ export default function Chat() {
           </div>
         </form>
 
-        {/* Hint bawah input */}
-        <div className="max-w-3xl mx-auto mt-1.5 pb-2">
-          <p className="text-xs text-gray-400">
-            Tekan <kbd className="font-semibold">Enter</kbd> untuk kirim ·{" "}
-            <kbd className="font-semibold">Shift + Enter</kbd> baris baru
-          </p>
-        </div>
       </div>
 
       {/* Footer */}
