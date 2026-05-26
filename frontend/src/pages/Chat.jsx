@@ -14,7 +14,7 @@ export default function Chat() {
   const [npm, setNpm] = useState(() => localStorage.getItem("npm") || "");
   const [npmInput, setNpmInput] = useState("");
   const [showNpmPopup, setShowNpmPopup] = useState(false);
-  const [messages, setMessages] = useState([GREETING]);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -24,7 +24,7 @@ export default function Chat() {
   const textareaRef = useRef(null);
   const navigate = useNavigate();
 
-  const isWelcomeScreen = messages.length === 1 && !loadingHistory;
+  const isWelcomeScreen = messages.length === 0 && !loadingHistory;
 
   useEffect(() => {
     if (!npm) {
@@ -44,7 +44,6 @@ export default function Chat() {
       const { data } = await api.get(`/history/${npmValue}`);
       if (data.length > 0) {
         setMessages([
-          GREETING,
           ...data.map((d) => ({ role: d.role, content: d.content })),
         ]);
       }
@@ -73,7 +72,7 @@ export default function Chat() {
     if (!confirm("Hapus semua riwayat chat?")) return;
     try {
       await api.delete(`/history/${npm}`);
-      setMessages([GREETING]);
+      setMessages([]);
     } catch {
       alert("Gagal menghapus riwayat");
     }
@@ -151,7 +150,7 @@ export default function Chat() {
     setLoading(true);
 
     try {
-      const history = nextMessages.filter((m) => m !== GREETING).slice(-10);
+      const history = nextMessages.slice(-10);
       const payload = { messages: history, npm };
       if (fileToSend) {
         payload.file = {
@@ -180,7 +179,7 @@ export default function Chat() {
   }
 
   return (
-    <div className="flex flex-col bg-gray-50" style={{ height: '100dvh' }}>
+    <div className="flex flex-col bg-gray-50" style={{ height: "100dvh" }}>
       {/* Popup NPM */}
       {showNpmPopup && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
@@ -451,18 +450,16 @@ export default function Chat() {
             </button>
           </div>
         </form>
-
       </div>
 
       {/* Footer */}
-      <footer className="shrink-0 bg-white border-t border-gray-100 px-4 py-2 flex justify-between items-center text-xs text-gray-400">
-        <span>© 2026 iLab — Asisten Praktikum</span>
-        <button
+      <footer className="shrink-0 bg-white border-t border-gray-100 px-4 py-2 flex items-center justify-center text-xs text-gray-400">
+        <span
           onClick={() => navigate("/admin/login")}
-          className="hover:text-gray-600 transition-colors"
+          className="cursor-default select-none"
         >
-          Admin
-        </button>
+          © 2026 Universitas Gunadarma · iLab
+        </span>
       </footer>
     </div>
   );
