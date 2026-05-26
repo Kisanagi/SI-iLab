@@ -213,7 +213,7 @@ export default function Chat() {
       )}
 
       {/* Header */}
-      <header className="bg-primary text-white px-4 py-3 shadow-md shrink-0 flex items-center justify-between">
+      <header className="bg-primary text-white px-3 sm:px-4 py-2.5 sm:py-3 shadow-md shrink-0 flex items-center justify-between">
         {/* Kiri: ikon bot + judul + status */}
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center shrink-0">
@@ -246,7 +246,7 @@ export default function Chat() {
           <button
             onClick={handleClearHistory}
             title="Hapus riwayat"
-            className="flex items-center gap-1.5 text-xs text-blue-200 hover:text-white border border-blue-300/40 hover:border-white/60 px-3 py-1.5 rounded-full transition-colors"
+            className="flex items-center gap-1.5 text-xs text-blue-200 hover:text-white border border-blue-300/40 hover:border-white/60 px-2.5 sm:px-3 py-1.5 rounded-full transition-colors"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -290,7 +290,7 @@ export default function Chat() {
       )}
 
       {/* Messages */}
-      <main className="flex-1 overflow-y-auto px-4 py-4">
+      <main className="flex-1 overflow-y-auto px-3 sm:px-4 py-3 sm:py-4">
         {loadingHistory ? (
           <div className="text-center text-gray-400 text-sm py-8">
             Memuat riwayat chat...
@@ -298,12 +298,12 @@ export default function Chat() {
         ) : isWelcomeScreen ? (
           /* Welcome screen */
           <div className="flex flex-col items-center justify-center h-full text-center px-4 pb-8">
-            <div className="relative mb-6">
-              <div className="w-24 h-24 rounded-full bg-white shadow-md flex items-center justify-center overflow-hidden">
+            <div className="relative mb-4 sm:mb-6">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white shadow-md flex items-center justify-center overflow-hidden">
                 <img
                   src="/gunadarma.png"
                   alt="Universitas Gunadarma"
-                  className="w-20 h-20 object-contain"
+                  className="w-16 h-16 sm:w-20 sm:h-20 object-contain"
                   onError={(e) => {
                     e.target.style.display = "none";
                     e.target.parentElement.innerHTML =
@@ -314,10 +314,10 @@ export default function Chat() {
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-orange-400 rounded-full" />
               <span className="absolute -bottom-1 -left-1 w-3 h-3 bg-green-400 rounded-full" />
             </div>
-            <h2 className="text-xl font-bold text-gray-800 mb-2">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">
               Selamat datang di iLab
             </h2>
-            <p className="text-sm text-gray-500 max-w-xs">
+            <p className="text-xs sm:text-sm text-gray-500 max-w-xs">
               Ceritakan kendala praktikum Anda, atau ketik pertanyaan untuk
               memulai.
             </p>
@@ -376,7 +376,7 @@ export default function Chat() {
       )}
 
       {/* Input */}
-      <div className="shrink-0 bg-white border-t border-gray-200 px-4 pt-3 pb-1">
+      <div className="shrink-0 bg-white border-t border-gray-200 px-3 sm:px-4 pt-2.5 sm:pt-3 pb-2 sm:pb-1">
         <form onSubmit={sendMessage}>
           <div className="flex gap-2 max-w-3xl mx-auto items-end">
             {/* Tombol upload file */}
@@ -415,7 +415,7 @@ export default function Chat() {
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              placeholder="Ketik pesan... (mis. 'saya ada masalah dengan praktikum')"
+              placeholder="Ketik pesan..."
               disabled={loading || loadingHistory || showNpmPopup}
               rows={1}
               className="flex-1 border border-gray-300 rounded-2xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-light disabled:opacity-60 resize-none overflow-hidden"

@@ -26,7 +26,7 @@ export default function ChatBubble({ role, content, imagePreview, fileName }) {
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}>
       <div
-        className={`max-w-[75%] rounded-2xl text-sm leading-relaxed break-words overflow-hidden ${
+        className={`max-w-[85%] sm:max-w-[75%] rounded-2xl text-sm leading-relaxed break-words overflow-hidden ${
           isUser
             ? 'bg-blue-600 text-white rounded-br-sm'
             : 'bg-gray-200 text-gray-800 rounded-bl-sm'
