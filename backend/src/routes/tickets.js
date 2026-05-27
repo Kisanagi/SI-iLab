@@ -60,12 +60,25 @@ router.get('/:id/krs', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
 
+  // Ambil krs_url sebelum hapus agar bisa hapus file di storage
+  const { data: ticket } = await supabase
+    .from('tickets')
+    .select('krs_url')
+    .eq('id', id)
+    .single();
+
   const { error } = await supabase
     .from('tickets')
     .delete()
     .eq('id', id);
 
   if (error) return res.status(500).json({ error: 'Gagal menghapus tiket' });
+
+  // Hapus file KRS dari storage jika ada
+  if (ticket?.krs_url) {
+    await supabase.storage.from('KRS-File').remove([ticket.krs_url]);
+  }
+
   res.json({ message: 'Tiket berhasil dihapus' });
 });
 
