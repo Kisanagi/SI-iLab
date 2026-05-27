@@ -12,7 +12,7 @@ const toolDefinitions = [
     function: {
       name: "buat_tiket",
       description:
-        "Buat tiket baru untuk permintaan yang memerlukan tindakan admin, seperti enrollment, kerusakan alat, masalah akun, booking, atau lainnya.",
+        "Buat tiket baru untuk permintaan yang memerlukan tindakan admin, seperti enrollment, pendafatran pengulangan praktikum, atau lainnya.",
       parameters: {
         type: "object",
         properties: {
@@ -46,7 +46,8 @@ const toolDefinitions = [
           },
           krs_url: {
             type: "string",
-            description: "Path file KRS di storage jika mahasiswa melampirkan KRS. Ambil dari konteks percakapan jika tersedia.",
+            description:
+              "Path file KRS di storage jika mahasiswa melampirkan KRS. Ambil dari konteks percakapan jika tersedia.",
           },
         },
         required: [
