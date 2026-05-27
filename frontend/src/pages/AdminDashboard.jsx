@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../lib/api.js';
 import TicketCard from '../components/TicketCard.jsx';
 
-const STATUS_LIST = ['Menunggu', 'Diproses', 'Selesai'];
+const STATUS_LIST = ['Menunggu', 'Diproses', 'Selesai', 'Ditolak'];
 
 export default function AdminDashboard() {
   const [tickets, setTickets] = useState([]);
@@ -143,6 +143,11 @@ export default function AdminDashboard() {
       card: 'border-green-200',
       badge: 'bg-green-50 text-green-500',
       num: 'text-green-600',
+    },
+    Ditolak: {
+      card: 'border-red-200',
+      badge: 'bg-red-50 text-red-500',
+      num: 'text-red-600',
     },
   };
 

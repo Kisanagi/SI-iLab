@@ -18,16 +18,19 @@ router.get('/', async (req, res) => {
 
 router.patch('/:id', async (req, res) => {
   const { id } = req.params;
-  const { status } = req.body;
+  const { status, catatan_admin } = req.body;
 
-  const validStatus = ['Menunggu', 'Diproses', 'Selesai'];
+  const validStatus = ['Menunggu', 'Diproses', 'Selesai', 'Ditolak'];
   if (!status || !validStatus.includes(status)) {
     return res.status(400).json({ error: `Status tidak valid. Pilih: ${validStatus.join(', ')}` });
   }
 
+  const updatePayload = { status };
+  if (catatan_admin !== undefined) updatePayload.catatan_admin = catatan_admin;
+
   const { data, error } = await supabase
     .from('tickets')
-    .update({ status })
+    .update(updatePayload)
     .eq('id', id)
     .select()
     .single();

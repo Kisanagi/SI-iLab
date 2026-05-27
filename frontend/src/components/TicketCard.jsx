@@ -5,11 +5,16 @@ const STATUS_COLOR = {
   Menunggu: 'bg-gray-100 text-gray-600',
   Diproses: 'bg-blue-100 text-blue-700',
   Selesai: 'bg-green-100 text-green-700',
+  Ditolak: 'bg-red-100 text-red-700',
 };
 
 export default function TicketCard({ ticket, onUpdated }) {
   const [status, setStatus] = useState(ticket.status);
-  const [loading, setLoading] = useState(false);
+  const [catatanAdmin, setCatatanAdmin] = useState(ticket.catatan_admin || '');
+  const [statusLoading, setStatusLoading] = useState(false);
+  const [catatanLoading, setCatatanLoading] = useState(false);
+  const [catatanError, setCatatanError] = useState('');
+  const [catatanSaved, setCatatanSaved] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
   async function handleViewKrs() {
@@ -34,15 +39,35 @@ export default function TicketCard({ ticket, onUpdated }) {
 
   async function handleStatusChange(e) {
     const newStatus = e.target.value;
-    setLoading(true);
+    setStatus(newStatus);
+    setStatusLoading(true);
     try {
       await api.patch(`/tickets/${ticket.id}`, { status: newStatus });
-      setStatus(newStatus);
       onUpdated();
     } catch {
       alert('Gagal memperbarui status tiket');
+      setStatus(ticket.status);
     } finally {
-      setLoading(false);
+      setStatusLoading(false);
+    }
+  }
+
+  async function handleSaveCatatan() {
+    if (status === 'Ditolak' && !catatanAdmin.trim()) {
+      setCatatanError('Catatan wajib diisi saat menolak tiket.');
+      return;
+    }
+    setCatatanLoading(true);
+    setCatatanError('');
+    try {
+      await api.patch(`/tickets/${ticket.id}`, { status, catatan_admin: catatanAdmin });
+      setCatatanSaved(true);
+      setTimeout(() => setCatatanSaved(false), 3000);
+      onUpdated();
+    } catch {
+      alert('Gagal menyimpan catatan');
+    } finally {
+      setCatatanLoading(false);
     }
   }
 
@@ -82,6 +107,7 @@ export default function TicketCard({ ticket, onUpdated }) {
           </div>
         </div>
       )}
+
       <div className="flex items-start justify-between gap-4 mb-3">
         <div>
           <p className="text-xs text-gray-400 mb-0.5">{ticket.kode_tiket || `#${ticket.id.slice(0, 8)}`}</p>
@@ -91,7 +117,7 @@ export default function TicketCard({ ticket, onUpdated }) {
           </p>
         </div>
         <div className="flex flex-col items-end gap-2 shrink-0">
-          <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLOR[status]}`}>
+          <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLOR[status] || 'bg-gray-100 text-gray-600'}`}>
             {status}
           </span>
         </div>
@@ -118,19 +144,48 @@ export default function TicketCard({ ticket, onUpdated }) {
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-2">
-        <div className="flex items-center gap-2">
+      {/* Catatan Admin */}
+      <div className="mt-3 mb-3">
+        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+          Catatan Admin{status === 'Ditolak' && <span className="text-red-500 ml-1">*</span>}
+        </label>
+        <textarea
+          value={catatanAdmin}
+          onChange={(e) => { setCatatanAdmin(e.target.value); setCatatanError(''); }}
+          placeholder={status === 'Ditolak' ? 'Wajib isi alasan penolakan...' : 'Tambahkan catatan untuk mahasiswa (opsional)...'}
+          rows={2}
+          className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 resize-none ${
+            catatanError ? 'border-red-300 focus:ring-red-200' : 'border-gray-300 focus:ring-primary-light'
+          }`}
+        />
+        {catatanError && <p className="text-xs text-red-500 mt-1">{catatanError}</p>}
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <label className="text-sm text-gray-600 shrink-0">Ubah status:</label>
           <select
             value={status}
             onChange={handleStatusChange}
-            disabled={loading}
+            disabled={statusLoading}
             className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-light disabled:opacity-60"
           >
             <option>Menunggu</option>
             <option>Diproses</option>
             <option>Selesai</option>
+            <option>Ditolak</option>
           </select>
+          <button
+            onClick={handleSaveCatatan}
+            disabled={catatanLoading || catatanSaved}
+            className={`text-sm px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-70 ${
+              catatanSaved
+                ? 'bg-green-500 text-white'
+                : 'bg-primary hover:bg-primary-dark disabled:opacity-50 text-white'
+            }`}
+          >
+            {catatanLoading ? 'Menyimpan...' : catatanSaved ? '✓ Tersimpan' : 'Simpan Catatan'}
+          </button>
         </div>
         <div className="flex items-center gap-3">
           {ticket.krs_url && (

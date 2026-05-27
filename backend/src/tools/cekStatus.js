@@ -5,7 +5,7 @@ async function cekStatus({ tiket_id, npm }) {
     throw new Error('Salah satu dari tiket_id atau npm harus diisi');
   }
 
-  const fields = 'id, kode_tiket, judul, kategori, status, created_at';
+  const fields = 'id, kode_tiket, judul, kategori, status, catatan_admin, created_at';
 
   if (tiket_id) {
     // Coba cari by kode_tiket dulu (TKT-001), lalu by UUID
