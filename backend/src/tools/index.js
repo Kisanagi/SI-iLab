@@ -40,13 +40,14 @@ const toolDefinitions = [
             description: "Pesan asli dari mahasiswa",
           },
           detail: {
-            type: "object",
+            anyOf: [{ type: "object" }, { type: "null" }],
             description:
               "Detail spesifik per kategori. Enrollment: {kelas, email, no_hp, nama_praktikum, kode_mata_kuliah}. Pendaftaran Pengulangan Praktikum: {kelas_asli, kelas_pengulangan, email, praktikum_yang_diulang, kode_mata_kuliah}. Lainnya: {keterangan}.",
           },
           krs_url: {
-            type: "string",
-            description: "Path file KRS di storage jika mahasiswa melampirkan KRS. Ambil dari konteks percakapan jika tersedia.",
+            anyOf: [{ type: "string" }, { type: "null" }],
+            description:
+              "Path file KRS di storage jika mahasiswa melampirkan KRS. Isi hanya jika ada file KRS yang diupload, jika tidak ada biarkan null.",
           },
         },
         required: [

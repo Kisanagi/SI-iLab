@@ -15,6 +15,11 @@ async function generateKodeTiket() {
 }
 
 async function buatTiket({ npm, nama_mahasiswa, judul, kategori, ringkasan, pesan_asli, detail, krs_url }) {
+  // Model kadang mengirim detail sebagai JSON string — parse dulu
+  if (typeof detail === 'string') {
+    try { detail = JSON.parse(detail); } catch { detail = null; }
+  }
+
   // Validasi field detail wajib per kategori
   const requiredFields = REQUIRED_DETAIL_FIELDS[kategori];
   if (requiredFields) {
