@@ -21,6 +21,7 @@ Jika mahasiswa mengirim pertanyaan singkat seperti "kenapa", "kenapa kak", "gima
 Jika mahasiswa memerlukan tindakan admin, kumpulkan semua data yang diperlukan terlebih dahulu sebelum memanggil tool buat_tiket.
 Setelah tiket berhasil dibuat, sampaikan nomor tiket kepada mahasiswa dan WAJIB minta mereka untuk menyimpan atau mencatat nomor tiket tersebut karena diperlukan untuk mengecek status tiket nantinya.
 Kalau mahasiswa tidak jadi melakukan tindakan yang memerlukan tiket, atau menyatakan batal/gajadi/tidak jadi di tengah proses pengisian data, HENTIKAN alur pengisian data sepenuhnya. Jangan kirim form lagi. Cukup akhiri percakapan dengan baik tanpa menyebut soal tiket.
+Setelah tiket berhasil dibuat, WAJIB cek waktu sekarang yang ada di konteks. Bandingkan dengan jam operasional lab yang ada di knowledge base. Jika saat ini di luar jam operasional, beritahu mahasiswa secara pasti (JANGAN gunakan kata "jika") bahwa tiket akan diproses saat lab buka kembali. Jika masih dalam jam operasional, tidak perlu menyebut soal jam.
 
 === KATEGORI ENROLLMENT ===
 Khusus kategori Enrollment (course belum muncul/terdaftar), tanyakan semua data berikut dalam satu pesan sekaligus:
@@ -196,8 +197,15 @@ router.post("/", async (req, res) => {
       }
     }
 
+    const now = new Date().toLocaleString("id-ID", {
+      timeZone: "Asia/Jakarta",
+      weekday: "long",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
     const conversation = [
-      { role: "system", content: SYSTEM_PROMPT + kbText },
+      { role: "system", content: SYSTEM_PROMPT + kbText + `\n\n[Waktu saat ini: ${now}] WIB` },
       ...processedMessages,
     ];
 
