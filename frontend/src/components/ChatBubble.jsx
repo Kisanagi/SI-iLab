@@ -3,17 +3,21 @@ function renderWithLinks(text, isUser) {
   const parts = text.split(urlRegex);
   return parts.map((part, i) => {
     if (/^(https?:\/\/[^\s]+|www\.[^\s]+)$/.test(part)) {
-      const href = part.startsWith('http') ? part : `https://${part}`;
+      const cleanPart = part.replace(/[.,!?;:)\]>'"]+$/, '');
+      const trailingPunct = part.slice(cleanPart.length);
+      const href = cleanPart.startsWith('http') ? cleanPart : `https://${cleanPart}`;
       return (
-        <a
-          key={i}
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`underline ${isUser ? 'text-blue-200 hover:text-white' : 'text-blue-600 hover:text-blue-800'}`}
-        >
-          {part}
-        </a>
+        <span key={i}>
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`underline ${isUser ? 'text-blue-200 hover:text-white' : 'text-blue-600 hover:text-blue-800'}`}
+          >
+            {cleanPart}
+          </a>
+          {trailingPunct}
+        </span>
       );
     }
     return part;
