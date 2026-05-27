@@ -10,6 +10,7 @@ const STATUS_COLOR = {
 export default function TicketCard({ ticket, onUpdated }) {
   const [status, setStatus] = useState(ticket.status);
   const [loading, setLoading] = useState(false);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
   async function handleViewKrs() {
     try {
@@ -21,12 +22,13 @@ export default function TicketCard({ ticket, onUpdated }) {
   }
 
   async function handleDelete() {
-    if (!confirm(`Hapus tiket "${ticket.judul}"?`)) return;
     try {
       await api.delete(`/tickets/${ticket.id}`);
       onUpdated();
     } catch {
       alert('Gagal menghapus tiket');
+    } finally {
+      setShowConfirmDelete(false);
     }
   }
 
@@ -53,6 +55,33 @@ export default function TicketCard({ ticket, onUpdated }) {
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+
+      {/* Modal konfirmasi hapus */}
+      {showConfirmDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
+            <h3 className="font-bold text-gray-800 mb-2">Hapus Tiket?</h3>
+            <p className="text-sm text-gray-500 mb-1">Tiket berikut akan dihapus permanen:</p>
+            <p className="text-sm font-semibold text-gray-700 mb-4">
+              {ticket.kode_tiket} — {ticket.judul}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={handleDelete}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-2 rounded-lg transition-colors"
+              >
+                Ya, Hapus
+              </button>
+              <button
+                onClick={() => setShowConfirmDelete(false)}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium py-2 rounded-lg transition-colors"
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex items-start justify-between gap-4 mb-3">
         <div>
           <p className="text-xs text-gray-400 mb-0.5">{ticket.kode_tiket || `#${ticket.id.slice(0, 8)}`}</p>
@@ -113,7 +142,7 @@ export default function TicketCard({ ticket, onUpdated }) {
             </button>
           )}
           <button
-            onClick={handleDelete}
+            onClick={() => setShowConfirmDelete(true)}
             className="text-xs text-red-400 hover:text-red-600 font-medium transition-colors"
           >
             Hapus tiket

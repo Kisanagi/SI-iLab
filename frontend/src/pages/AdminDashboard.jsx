@@ -18,6 +18,8 @@ export default function AdminDashboard() {
   const [editingId, setEditingId] = useState(null);
 
   const [activeTab, setActiveTab] = useState('tiket');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState('Semua');
   const navigate = useNavigate();
   const kbFormRef = useRef(null);
   const scrollContainerRef = useRef(null);
@@ -49,6 +51,9 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchTickets();
     fetchKb();
+
+    const interval = setInterval(fetchTickets, 30000);
+    return () => clearInterval(interval);
   }, [fetchTickets, fetchKb]);
 
   function handleLogout() {
@@ -106,6 +111,17 @@ export default function AdminDashboard() {
     setEditingId(null);
     setKbError('');
   }
+
+  const filteredTickets = tickets.filter((t) => {
+    const matchStatus = filterStatus === 'Semua' || t.status === filterStatus;
+    const q = searchQuery.toLowerCase();
+    const matchSearch =
+      !q ||
+      (t.nama_mahasiswa || '').toLowerCase().includes(q) ||
+      (t.npm || '').toLowerCase().includes(q) ||
+      (t.kode_tiket || '').toLowerCase().includes(q);
+    return matchStatus && matchSearch;
+  });
 
   const stats = STATUS_LIST.map((s) => ({
     label: s,
@@ -221,6 +237,35 @@ export default function AdminDashboard() {
                   {errorTickets}
                 </div>
               )}
+
+              {/* Search & Filter */}
+              {!loadingTickets && tickets.length > 0 && (
+                <div className="mb-4 space-y-2">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Cari nama, NPM, atau kode tiket..."
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-light"
+                  />
+                  <div className="flex gap-2 flex-wrap">
+                    {['Semua', ...STATUS_LIST].map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setFilterStatus(s)}
+                        className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                          filterStatus === s
+                            ? 'bg-primary text-white'
+                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {loadingTickets ? (
                 <div className="text-center text-gray-400 py-16 text-sm">Memuat tiket...</div>
               ) : tickets.length === 0 ? (
@@ -230,9 +275,13 @@ export default function AdminDashboard() {
                   </svg>
                   <p className="text-sm">Belum ada tiket masuk.</p>
                 </div>
+              ) : filteredTickets.length === 0 ? (
+                <div className="text-center text-gray-400 py-16 text-sm">
+                  Tidak ada tiket yang sesuai pencarian.
+                </div>
               ) : (
                 <div className="space-y-4 pb-4">
-                  {tickets.map((ticket) => (
+                  {filteredTickets.map((ticket) => (
                     <TicketCard key={ticket.id} ticket={ticket} onUpdated={fetchTickets} />
                   ))}
                 </div>
