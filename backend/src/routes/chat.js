@@ -20,7 +20,6 @@ Jika mahasiswa mengirim kalimat percakapan biasa seperti "oke", "baik", "terima 
 Jika mahasiswa memerlukan tindakan admin, kumpulkan semua data yang diperlukan terlebih dahulu sebelum memanggil tool buat_tiket.
 Setelah tiket berhasil dibuat, sampaikan nomor tiket kepada mahasiswa dan WAJIB minta mereka untuk menyimpan atau mencatat nomor tiket tersebut karena diperlukan untuk mengecek status tiket nantinya.
 Kalau mahasiswa tidak jadi melakukan tindakan yang memerlukan tiket, atau menyatakan batal/gajadi/tidak jadi di tengah proses pengisian data, HENTIKAN alur pengisian data sepenuhnya. Jangan kirim form lagi. Cukup akhiri percakapan dengan baik tanpa menyebut soal tiket.
-Setelah tiket berhasil dibuat, jika waktu sekarang di luar jam operasional lab, beritahu mahasiswa bahwa tiket akan diproses saat jam buka. Jam operasional lab ada di knowledge base.
 
 === KATEGORI ENROLLMENT ===
 Khusus kategori Enrollment (course belum muncul/terdaftar), tanyakan semua data berikut dalam satu pesan sekaligus:
@@ -165,9 +164,7 @@ router.post("/", async (req, res) => {
             );
           } catch (err) {
             console.error("Gagal upload KRS:", err);
-            return res
-              .status(500)
-              .json({ error: "Gagal mengupload file KRS. Silakan coba lagi." });
+            return res.status(500).json({ error: "Gagal mengupload file KRS. Silakan coba lagi." });
           }
           fileContext = `\n\n[Mahasiswa melampirkan file PDF KRS dengan isi berikut:]\n${result.text}${krsStoragePath ? `\n[krs_path: ${krsStoragePath}]` : ""}`;
         } else {
@@ -198,18 +195,8 @@ router.post("/", async (req, res) => {
       }
     }
 
-    const now = new Date().toLocaleDateString("id-ID", {
-      timeZone: "Asia/Jakarta",
-      weekday: "long",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
     const conversation = [
-      {
-        role: "system",
-        content: SYSTEM_PROMPT + kbText + `\n\n[Waktu saat ini: ${now}] WIB`,
-      },
+      { role: "system", content: SYSTEM_PROMPT + kbText },
       ...processedMessages,
     ];
 
