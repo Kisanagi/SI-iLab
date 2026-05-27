@@ -3,11 +3,6 @@ import { useNavigate } from "react-router-dom";
 import api from "../lib/api.js";
 import ChatBubble from "../components/ChatBubble.jsx";
 
-const GREETING = {
-  role: "assistant",
-  content: "Halo! Saya asisten iLab. Ada yang bisa saya bantu? 😊",
-};
-
 const MAX_FILE_SIZE_MB = 10;
 
 export default function Chat() {
@@ -278,7 +273,7 @@ export default function Chat() {
               localStorage.removeItem("npm");
               setNpm("");
               setNpmInput("");
-              setMessages([GREETING]);
+              setMessages([]);
               setShowNpmPopup(true);
             }}
             className="underline hover:text-primary-dark transition-colors"
