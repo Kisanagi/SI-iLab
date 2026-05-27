@@ -220,9 +220,22 @@ router.post("/", async (req, res) => {
       return res.json({ reply });
     }
 
-    const toolCallMessages = [choice.message];
+    // Sanitize nama tool di choice.message sebelum masuk ke history
+    // Groq validasi nama tool di conversation history — nama kotor akan di-reject
+    const sanitizedChoiceMessage = {
+      ...choice.message,
+      tool_calls: choice.message.tool_calls.map((tc) => ({
+        ...tc,
+        function: {
+          ...tc.function,
+          name: tc.function.name.replace(/<\|[^|]*\|>[^"]*$/, "").trim(),
+        },
+      })),
+    };
 
-    for (const toolCall of choice.message.tool_calls) {
+    const toolCallMessages = [sanitizedChoiceMessage];
+
+    for (const toolCall of sanitizedChoiceMessage.tool_calls) {
       const fnName = toolCall.function.name;
       const fnArgs = JSON.parse(toolCall.function.arguments);
 
@@ -249,12 +262,55 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const finalResponse = await groqReasoning.chat.completions.create({
-      model: MODEL_REASONING,
-      messages: [...conversation, ...toolCallMessages],
-    });
+    let currentMessages = [...conversation, ...toolCallMessages];
+    let finalChoice;
 
-    const reply = finalResponse.choices[0].message.content;
+    for (let i = 0; i < 5; i++) {
+      const finalResponse = await groqReasoning.chat.completions.create({
+        model: MODEL_REASONING,
+        messages: currentMessages,
+        tools: toolDefinitions,
+        tool_choice: "auto",
+      });
+
+      finalChoice = finalResponse.choices[0];
+
+      // Model sudah menghasilkan teks — selesai
+      if (!finalChoice.message.tool_calls || finalChoice.message.tool_calls.length === 0) {
+        break;
+      }
+
+      // Sanitize nama tool sebelum dimasukkan ke history
+      const sanitizedFinalMessage = {
+        ...finalChoice.message,
+        tool_calls: finalChoice.message.tool_calls.map((tc) => ({
+          ...tc,
+          function: {
+            ...tc.function,
+            name: tc.function.name.replace(/<\|[^|]*\|>[^"]*$/, "").trim(),
+          },
+        })),
+      };
+
+      // Model memanggil tool lagi — eksekusi lalu lanjut iterasi
+      const extraMessages = [sanitizedFinalMessage];
+      for (const toolCall of sanitizedFinalMessage.tool_calls) {
+        const fnName = toolCall.function.name;
+        const fnArgs = JSON.parse(toolCall.function.arguments);
+        const handler = toolHandlers[fnName];
+        let toolResult;
+        try {
+          if (fnName === "buat_tiket" && krsStoragePath) fnArgs.krs_url = krsStoragePath;
+          toolResult = handler ? await handler(fnArgs) : { error: `Tool tidak dikenal: ${fnName}` };
+        } catch (err) {
+          toolResult = { error: err.message };
+        }
+        extraMessages.push({ role: "tool", tool_call_id: toolCall.id, content: JSON.stringify(toolResult) });
+      }
+      currentMessages = [...currentMessages, ...extraMessages];
+    }
+
+    const reply = finalChoice.message.content ?? "Maaf, saya tidak dapat memproses permintaan tersebut saat ini. Silakan coba lagi.";
     await simpanPesan(npm, "assistant", reply);
     res.json({ reply });
   } catch (err) {
