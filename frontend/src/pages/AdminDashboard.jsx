@@ -179,7 +179,7 @@ export default function AdminDashboard() {
 
       <div className="flex-1 overflow-hidden max-w-4xl w-full mx-auto px-4 py-5 flex flex-col">
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-5 shrink-0">
+        <div className="grid grid-cols-4 gap-2 sm:gap-3 mb-5 shrink-0">
           {stats.map(({ label, count }) => (
             <div
               key={label}
