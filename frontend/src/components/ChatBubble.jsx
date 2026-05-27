@@ -28,7 +28,7 @@ export default function ChatBubble({ role, content, imagePreview, fileName }) {
   const isUser = role === 'user';
 
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}>
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3 animate-fade-in-up`}>
       <div
         className={`max-w-[85%] sm:max-w-[75%] rounded-2xl text-sm leading-relaxed break-words overflow-hidden ${
           isUser

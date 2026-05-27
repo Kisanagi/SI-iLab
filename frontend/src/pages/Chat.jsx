@@ -9,6 +9,7 @@ export default function Chat() {
   const [npm, setNpm] = useState(() => localStorage.getItem("npm") || "");
   const [npmInput, setNpmInput] = useState("");
   const [showNpmPopup, setShowNpmPopup] = useState(false);
+  const [popupClosing, setPopupClosing] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -59,8 +60,12 @@ export default function Chat() {
     }
     localStorage.setItem("npm", trimmed);
     setNpm(trimmed);
-    setShowNpmPopup(false);
-    fetchHistory(trimmed);
+    setPopupClosing(true);
+    setTimeout(() => {
+      setShowNpmPopup(false);
+      setPopupClosing(false);
+      fetchHistory(trimmed);
+    }, 180);
   }
 
   async function handleClearHistory() {
@@ -177,8 +182,8 @@ export default function Chat() {
     <div className="flex flex-col bg-gray-50" style={{ height: "100dvh" }}>
       {/* Popup NPM */}
       {showNpmPopup && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4 animate-fade-in">
+          <div className={`bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm ${popupClosing ? 'animate-fade-out-scale' : 'animate-fade-in-scale'}`}>
             <h2 className="text-lg font-bold text-gray-800 mb-1">
               Selamat datang!
             </h2>
@@ -291,7 +296,7 @@ export default function Chat() {
           </div>
         ) : isWelcomeScreen ? (
           /* Welcome screen */
-          <div className="flex flex-col items-center justify-center h-full text-center px-4 pb-8">
+          <div className="flex flex-col items-center justify-center h-full text-center px-4 pb-8 animate-fade-in-up">
             <div className="relative mb-4 sm:mb-6">
               <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white shadow-md flex items-center justify-center overflow-hidden">
                 <img
