@@ -37,7 +37,7 @@ export default function ChatBubble({ role, content, imagePreview, fileName }) {
           <img
             src={imagePreview}
             alt="lampiran"
-            className="w-full max-w-xs object-cover rounded-t-2xl"
+            className="w-full object-cover rounded-t-2xl"
           />
         )}
 
