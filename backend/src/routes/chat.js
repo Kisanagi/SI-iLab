@@ -202,6 +202,9 @@ router.post("/", async (req, res) => {
     const now = new Date().toLocaleString("id-ID", {
       timeZone: "Asia/Jakarta",
       weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
     });
