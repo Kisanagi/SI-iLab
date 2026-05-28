@@ -92,6 +92,31 @@ async function simpanPesan(npm, role, content) {
 async function uploadKrsToStorage(base64, npm) {
   const buffer = Buffer.from(base64, "base64");
   const fileName = `${npm}_${Date.now()}.pdf`;
+
+  // Cleanup: hapus file KRS lama milik NPM ini yang tidak terhubung ke tiket
+  try {
+    const { data: existingFiles } = await supabase.storage
+      .from("KRS-File")
+      .list("", { search: `${npm}_` });
+
+    if (existingFiles && existingFiles.length > 0) {
+      const filePaths = existingFiles.map((f) => f.name);
+      const { data: usedFiles } = await supabase
+        .from("tickets")
+        .select("krs_url")
+        .in("krs_url", filePaths);
+
+      const usedPaths = (usedFiles || []).map((t) => t.krs_url);
+      const orphans = filePaths.filter((f) => !usedPaths.includes(f));
+
+      if (orphans.length > 0) {
+        await supabase.storage.from("KRS-File").remove(orphans);
+      }
+    }
+  } catch (err) {
+    console.error("Cleanup KRS gagal (diabaikan):", err.message);
+  }
+
   const { error } = await supabase.storage
     .from("KRS-File")
     .upload(fileName, buffer, {
