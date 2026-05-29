@@ -77,7 +77,7 @@ JANGAN tawarkan tiket Lainnya untuk: pertanyaan informasi yang tidak ada di KB (
 === CEK STATUS TIKET ===
 Jika mahasiswa ingin cek status tiket, minta nomor tiket atau NPM lalu panggil tool cek_status.
 Jika mahasiswa menyebutkan kode tiket (contoh: TKT-001, TKT-002) dalam bentuk apapun seperti "TKT-001 sudah?", "gimana TKT-002?", "cek TKT-003", langsung panggil tool cek_status tanpa bertanya lagi.
-Saat menyampaikan hasil cek status, selalu sertakan catatan_admin jika ada. Jika status tiket "Ditolak", sampaikan dengan jelas bahwa tiket ditolak beserta alasannya dari catatan_admin. Contoh: "Tiket TKT-001 kamu ditolak. Alasan dari admin: [catatan_admin]." Jika status bukan Ditolak dan ada catatan_admin, sampaikan juga sebagai informasi tambahan dari admin.
+Saat menyampaikan hasil cek status, sampaikan isi catatan_admin secara natural sebagai bagian dari kalimat jangan kutip mentah dengan label seperti "Catatan dari admin:" atau "Alasan dari admin:". Untuk status Ditolak, pastikan alasan penolakannya tetap tersampaikan dengan jelas meski disampaikan secara natural. Untuk status lainnya (Menunggu, Diproses, Selesai), sampaikan isi catatan_admin sebagai informasi tambahan yang relevan jika ada. Jika tidak ada catatan_admin, cukup sampaikan statusnya saja.
 
 === ATURAN UMUM BALASAN ===
 Selalu balas ramah dalam Bahasa Indonesia.
@@ -212,7 +212,9 @@ router.post("/", async (req, res) => {
             );
           } catch (err) {
             console.error("Gagal upload KRS:", err);
-            return res.status(500).json({ error: "Gagal mengupload file KRS. Silakan coba lagi." });
+            return res
+              .status(500)
+              .json({ error: "Gagal mengupload file KRS. Silakan coba lagi." });
           }
           fileContext = `\n\n[Mahasiswa melampirkan file PDF KRS dengan isi berikut:]\n${result.text}${krsStoragePath ? `\n[krs_path: ${krsStoragePath}]` : ""}`;
         } else {
@@ -254,7 +256,10 @@ router.post("/", async (req, res) => {
     });
 
     const conversation = [
-      { role: "system", content: SYSTEM_PROMPT + kbText + `\n\n[Waktu saat ini: ${now}] WIB` },
+      {
+        role: "system",
+        content: SYSTEM_PROMPT + kbText + `\n\n[Waktu saat ini: ${now}] WIB`,
+      },
       ...processedMessages,
     ];
 
@@ -334,7 +339,10 @@ router.post("/", async (req, res) => {
       finalChoice = finalResponse.choices[0];
 
       // Model sudah menghasilkan teks — selesai
-      if (!finalChoice.message.tool_calls || finalChoice.message.tool_calls.length === 0) {
+      if (
+        !finalChoice.message.tool_calls ||
+        finalChoice.message.tool_calls.length === 0
+      ) {
         break;
       }
 
@@ -358,17 +366,26 @@ router.post("/", async (req, res) => {
         const handler = toolHandlers[fnName];
         let toolResult;
         try {
-          if (fnName === "buat_tiket" && krsStoragePath) fnArgs.krs_url = krsStoragePath;
-          toolResult = handler ? await handler(fnArgs) : { error: `Tool tidak dikenal: ${fnName}` };
+          if (fnName === "buat_tiket" && krsStoragePath)
+            fnArgs.krs_url = krsStoragePath;
+          toolResult = handler
+            ? await handler(fnArgs)
+            : { error: `Tool tidak dikenal: ${fnName}` };
         } catch (err) {
           toolResult = { error: err.message };
         }
-        extraMessages.push({ role: "tool", tool_call_id: toolCall.id, content: JSON.stringify(toolResult) });
+        extraMessages.push({
+          role: "tool",
+          tool_call_id: toolCall.id,
+          content: JSON.stringify(toolResult),
+        });
       }
       currentMessages = [...currentMessages, ...extraMessages];
     }
 
-    const reply = finalChoice.message.content ?? "Maaf, saya tidak dapat memproses permintaan tersebut saat ini. Silakan coba lagi.";
+    const reply =
+      finalChoice.message.content ??
+      "Maaf, saya tidak dapat memproses permintaan tersebut saat ini. Silakan coba lagi.";
     await simpanPesan(npm, "assistant", reply);
     res.json({ reply });
   } catch (err) {
