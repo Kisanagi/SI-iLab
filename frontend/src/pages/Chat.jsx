@@ -2,6 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../lib/api.js";
 import ChatBubble from "../components/ChatBubble.jsx";
+import NpmPopup from "../components/NpmPopup.jsx";
+import WelcomeScreen from "../components/WelcomeScreen.jsx";
+import ChatInput from "../components/ChatInput.jsx";
 
 const MAX_FILE_SIZE_MB = 10;
 
@@ -39,9 +42,7 @@ export default function Chat() {
     try {
       const { data } = await api.get(`/history/${npmValue}`);
       if (data.length > 0) {
-        setMessages([
-          ...data.map((d) => ({ role: d.role, content: d.content })),
-        ]);
+        setMessages([...data.map((d) => ({ role: d.role, content: d.content }))]);
       }
     } catch (err) {
       console.error("Gagal fetch history:", err);
@@ -135,10 +136,9 @@ export default function Chat() {
     if ((!text && !attachedFile) || loading) return;
 
     const fileToSend = attachedFile;
-    const displayContent = text || "";
     const userMessage = {
       role: "user",
-      content: displayContent,
+      content: text || "",
       imagePreview: fileToSend?.type === "image" ? fileToSend.preview : null,
       fileName: fileToSend?.type === "pdf" ? fileToSend.name : null,
     };
@@ -161,17 +161,11 @@ export default function Chat() {
       }
 
       const { data } = await api.post("/chat", payload);
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: data.reply },
-      ]);
+      setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
     } catch {
       setMessages((prev) => [
         ...prev,
-        {
-          role: "assistant",
-          content: "Maaf, terjadi kesalahan. Silakan coba lagi.",
-        },
+        { role: "assistant", content: "Maaf, terjadi kesalahan. Silakan coba lagi." },
       ]);
     } finally {
       setLoading(false);
@@ -180,56 +174,21 @@ export default function Chat() {
 
   return (
     <div className="flex flex-col bg-gray-50" style={{ height: "100dvh" }}>
-      {/* Popup NPM */}
       {showNpmPopup && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4 animate-fade-in">
-          <div
-            className={`bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm ${popupClosing ? "animate-fade-out-scale" : "animate-fade-in-scale"}`}
-          >
-            <h2 className="text-lg font-bold text-gray-800 mb-1">
-              Selamat datang!
-            </h2>
-            <p className="text-sm text-gray-500 mb-4">
-              Masukkan NPM kamu untuk menyimpan riwayat chat.
-            </p>
-            <form onSubmit={handleNpmSubmit} className="space-y-3">
-              <input
-                type="text"
-                value={npmInput}
-                onChange={(e) => setNpmInput(e.target.value)}
-                autoFocus
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-light"
-              />
-              <button
-                type="submit"
-                disabled={!npmInput.trim()}
-                className="w-full bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
-              >
-                Mulai Chat
-              </button>
-            </form>
-          </div>
-        </div>
+        <NpmPopup
+          npmInput={npmInput}
+          setNpmInput={setNpmInput}
+          popupClosing={popupClosing}
+          handleNpmSubmit={handleNpmSubmit}
+        />
       )}
 
       {/* Header */}
       <header className="bg-primary text-white px-3 sm:px-4 py-2.5 sm:py-3 shadow-md shrink-0 flex items-center justify-between">
-        {/* Kiri: ikon bot + judul + status */}
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center shrink-0">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z" />
             </svg>
           </div>
           <div>
@@ -240,27 +199,14 @@ export default function Chat() {
             </p>
           </div>
         </div>
-
-        {/* Kanan: tombol hapus chat */}
         {npm && (
           <button
             onClick={handleClearHistory}
             title="Hapus riwayat"
             className="flex items-center gap-1.5 text-xs text-blue-200 hover:text-white border border-blue-300/40 hover:border-white/60 px-2.5 sm:px-3 py-1.5 rounded-full transition-colors"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-3.5 w-3.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
             Hapus chat
           </button>
@@ -270,9 +216,7 @@ export default function Chat() {
       {/* NPM badge */}
       {npm && (
         <div className="bg-blue-50 border-b border-blue-100 px-4 py-1.5 text-xs text-primary flex items-center justify-center gap-2">
-          <span>
-            NPM: <span className="font-semibold">{npm}</span>
-          </span>
+          <span>NPM: <span className="font-semibold">{npm}</span></span>
           <span className="text-blue-200">·</span>
           <button
             onClick={() => {
@@ -292,36 +236,9 @@ export default function Chat() {
       {/* Messages */}
       <main className="flex-1 overflow-y-auto px-3 sm:px-4 py-3 sm:py-4">
         {loadingHistory ? (
-          <div className="text-center text-gray-400 text-sm py-8">
-            Memuat riwayat chat...
-          </div>
+          <div className="text-center text-gray-400 text-sm py-8">Memuat riwayat chat...</div>
         ) : isWelcomeScreen ? (
-          /* Welcome screen */
-          <div className="flex flex-col items-center justify-center h-full text-center px-4 pb-8 animate-fade-in-up">
-            <div className="relative mb-4 sm:mb-6">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white shadow-md flex items-center justify-center overflow-hidden">
-                <img
-                  src="/gunadarma.png"
-                  alt="Universitas Gunadarma"
-                  className="w-16 h-16 sm:w-20 sm:h-20 object-contain"
-                  onError={(e) => {
-                    e.target.style.display = "none";
-                    e.target.parentElement.innerHTML =
-                      '<svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z" /></svg>';
-                  }}
-                />
-              </div>
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-orange-400 rounded-full" />
-              <span className="absolute -bottom-1 -left-1 w-3 h-3 bg-green-400 rounded-full" />
-            </div>
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">
-              Selamat datang di iLab
-            </h2>
-            <p className="text-xs sm:text-sm text-gray-500 max-w-xs">
-              Ceritakan kendala praktikum Anda, atau ketik pertanyaan untuk
-              memulai.
-            </p>
-          </div>
+          <WelcomeScreen />
         ) : (
           <>
             {messages.map((msg, i) => (
@@ -345,120 +262,24 @@ export default function Chat() {
         <div ref={bottomRef} />
       </main>
 
-      {/* Preview file terlampir */}
-      {attachedFile && (
-        <div className="shrink-0 bg-white border-t border-gray-100 px-4 pt-2">
-          <div className="max-w-3xl mx-auto">
-            <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 w-fit max-w-full">
-              {attachedFile.preview ? (
-                <img
-                  src={attachedFile.preview}
-                  alt="preview"
-                  className="h-10 w-10 object-cover rounded-lg shrink-0"
-                />
-              ) : (
-                <div className="h-10 w-10 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
-                  <span className="text-xs font-bold text-red-500">PDF</span>
-                </div>
-              )}
-              <span className="text-xs text-gray-700 truncate max-w-[180px]">
-                {attachedFile.name}
-              </span>
-              <button
-                onClick={removeAttachedFile}
-                className="text-gray-400 hover:text-gray-600 shrink-0 ml-1 text-sm"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Input */}
-      <div className="shrink-0 bg-white border-t border-gray-200 px-3 sm:px-4 pt-2.5 sm:pt-3 pb-2 sm:pb-1">
-        <form onSubmit={sendMessage}>
-          <div className="flex gap-2 max-w-3xl mx-auto items-end">
-            {/* Tombol upload file */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={loading || loadingHistory || showNpmPopup}
-              title="Lampirkan gambar atau PDF"
-              className="shrink-0 mb-1.5 text-gray-400 hover:text-primary disabled:opacity-40 transition-colors"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-                />
-              </svg>
-            </button>
-
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              placeholder="Ketik pesan..."
-              disabled={loading || loadingHistory || showNpmPopup}
-              rows={1}
-              className="flex-1 border border-gray-300 rounded-2xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-light disabled:opacity-60 resize-none overflow-hidden"
-              style={{ minHeight: "38px" }}
-            />
-
-            {/* Tombol kirim bulat */}
-            <button
-              type="submit"
-              disabled={
-                (!input.trim() && !attachedFile) ||
-                loading ||
-                loadingHistory ||
-                showNpmPopup
-              }
-              title="Kirim"
-              className="shrink-0 mb-0.5 w-9 h-9 bg-primary hover:bg-primary-dark disabled:opacity-40 text-white rounded-full flex items-center justify-center transition-colors"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 12h14M12 5l7 7-7 7"
-                />
-              </svg>
-            </button>
-          </div>
-        </form>
-      </div>
+      <ChatInput
+        input={input}
+        handleInputChange={handleInputChange}
+        handleKeyDown={handleKeyDown}
+        sendMessage={sendMessage}
+        loading={loading}
+        loadingHistory={loadingHistory}
+        showNpmPopup={showNpmPopup}
+        attachedFile={attachedFile}
+        fileInputRef={fileInputRef}
+        textareaRef={textareaRef}
+        handleFileSelect={handleFileSelect}
+        removeAttachedFile={removeAttachedFile}
+      />
 
       {/* Footer */}
       <footer className="shrink-0 bg-white border-t border-gray-100 px-4 py-2 flex items-center justify-center text-xs text-gray-400">
-        <span
-          onClick={() => navigate("/admin/login")}
-          className="cursor-default select-none"
-        >
+        <span onClick={() => navigate("/admin/login")} className="cursor-default select-none">
           © 2026 Universitas Gunadarma · iLab
         </span>
       </footer>
