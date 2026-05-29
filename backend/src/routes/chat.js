@@ -3,7 +3,7 @@ const { groqReasoning } = require("../lib/groq");
 const { toolDefinitions, toolHandlers } = require("../tools/index");
 const { SYSTEM_PROMPT } = require("../prompts/systemPrompt");
 const { fetchKnowledgeBase } = require("../lib/knowledgeBase");
-const { processFile, uploadKrsToStorage } = require("../lib/fileProcessor");
+const { processFile, uploadKrsToStorage } = require("../lib/fileUpload");
 const { simpanPesan } = require("../lib/chatSession");
 
 const router = Router();
