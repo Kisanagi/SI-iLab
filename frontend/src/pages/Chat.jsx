@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import api from "../lib/api.js";
 import ChatBubble from "../components/ChatBubble.jsx";
 import NpmPopup from "../components/NpmPopup.jsx";
@@ -21,7 +20,6 @@ export default function Chat() {
   const bottomRef = useRef(null);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
-  const navigate = useNavigate();
 
   const isWelcomeScreen = messages.length === 0 && !loadingHistory;
 
@@ -279,7 +277,7 @@ export default function Chat() {
 
       {/* Footer */}
       <footer className="shrink-0 bg-white border-t border-gray-100 px-4 py-2 flex items-center justify-center text-xs text-gray-400">
-        <span onClick={() => navigate("/admin/login")} className="cursor-default select-none">
+        <span className="select-none">
           © 2026 Universitas Gunadarma · iLab
         </span>
       </footer>
