@@ -1,13 +1,17 @@
 const { createClient } = require('@supabase/supabase-js');
 
-// DIAGNOSTIK SEMENTARA: cek apakah env var ke-load (tanpa membocorkan isinya)
-const key = process.env.SUPABASE_SERVICE_KEY;
-console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? 'OK' : 'MISSING');
-console.log('SUPABASE_SERVICE_KEY:', key ? `OK (panjang ${key.length})` : 'MISSING');
-
+// Client admin (service_role) untuk operasi database & storage.
+// persistSession & autoRefreshToken dimatikan agar sesi tidak pernah
+// berubah/tercemar oleh operasi auth — service_role harus selalu tetap.
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
+  process.env.SUPABASE_SERVICE_KEY,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
 );
 
 module.exports = supabase;
