@@ -56,7 +56,11 @@ router.get('/:id/krs', async (req, res) => {
     .from('KRS-File')
     .createSignedUrl(ticket.krs_url, 300); // berlaku 5 menit
 
-  if (signError) return res.status(500).json({ error: 'Gagal membuat link KRS' });
+  if (signError) {
+    console.error('Signed URL error untuk file:', ticket.krs_url);
+    console.error('Detail error Supabase:', JSON.stringify(signError, null, 2));
+    return res.status(500).json({ error: 'Gagal membuat link KRS', detail: signError.message });
+  }
   res.json({ url: signedData.signedUrl });
 });
 
