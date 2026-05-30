@@ -57,9 +57,22 @@ router.get('/:id/krs', async (req, res) => {
     .createSignedUrl(ticket.krs_url, 300); // berlaku 5 menit
 
   if (signError) {
-    console.error('Signed URL error untuk file:', ticket.krs_url);
-    console.error('Detail error Supabase:', JSON.stringify(signError, null, 2));
-    return res.status(500).json({ error: 'Gagal membuat link KRS', detail: signError.message });
+    console.error('Signed URL error untuk file:', ticket.krs_url, '-', signError.message);
+
+    // DIAGNOSTIK SEMENTARA: tampilkan file apa saja yang backend lihat di bucket
+    const { data: listData, error: listError } = await supabase.storage
+      .from('KRS-File')
+      .list('', { limit: 100 });
+    console.error('=== DIAGNOSTIK BUCKET ===');
+    console.error('krs_url yang dicari:', JSON.stringify(ticket.krs_url));
+    if (listError) {
+      console.error('Gagal list bucket:', listError.message);
+    } else {
+      console.error('File yang terlihat backend:', JSON.stringify((listData || []).map((f) => f.name)));
+    }
+    console.error('=========================');
+
+    return res.status(500).json({ error: 'Gagal membuat link KRS' });
   }
   res.json({ url: signedData.signedUrl });
 });
