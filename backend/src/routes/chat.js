@@ -9,6 +9,15 @@ const { simpanPesan } = require("../lib/chatSession");
 const router = Router();
 const MODEL_REASONING = process.env.MODEL_REASONING;
 
+// Pengaman deterministik: hapus label seperti "Catatan admin:", "Catatan dari admin:",
+// "Alasan:", "Alasan dari admin:" kalau model tetap menulisnya walau dilarang di prompt.
+function bersihkanLabelCatatan(text) {
+  if (!text) return text;
+  return text
+    .replace(/\b(Catatan(\s+dari)?\s+admin|Alasan(\s+dari\s+admin)?)\s*:\s*/gi, "")
+    .trimStart();
+}
+
 router.post("/", async (req, res) => {
   const { messages, npm, file } = req.body;
 
@@ -92,7 +101,7 @@ router.post("/", async (req, res) => {
     }
 
     if (!choice.message.tool_calls || choice.message.tool_calls.length === 0) {
-      const reply = choice.message.content;
+      const reply = bersihkanLabelCatatan(choice.message.content);
       await simpanPesan(npm, "assistant", reply);
       return res.json({ reply });
     }
@@ -182,7 +191,7 @@ router.post("/", async (req, res) => {
       currentMessages = [...currentMessages, ...extraMessages];
     }
 
-    const reply = finalChoice.message.content ?? "Maaf, saya tidak dapat memproses permintaan tersebut saat ini. Silakan coba lagi.";
+    const reply = bersihkanLabelCatatan(finalChoice.message.content) ?? "Maaf, saya tidak dapat memproses permintaan tersebut saat ini. Silakan coba lagi.";
     await simpanPesan(npm, "assistant", reply);
     res.json({ reply });
   } catch (err) {
