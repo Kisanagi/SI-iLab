@@ -22,6 +22,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("tiket");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("Semua");
+  const [filterKategori, setFilterKategori] = useState("Semua");
   const navigate = useNavigate();
   const kbFormRef = useRef(null);
   const scrollContainerRef = useRef(null);
@@ -115,13 +116,14 @@ export default function AdminDashboard() {
 
   const filteredTickets = tickets.filter((t) => {
     const matchStatus = filterStatus === "Semua" || t.status === filterStatus;
+    const matchKategori = filterKategori === "Semua" || t.kategori === filterKategori;
     const q = searchQuery.toLowerCase();
     const matchSearch =
       !q ||
       (t.nama_mahasiswa || "").toLowerCase().includes(q) ||
       (t.npm || "").toLowerCase().includes(q) ||
       (t.kode_tiket || "").toLowerCase().includes(q);
-    return matchStatus && matchSearch;
+    return matchStatus && matchKategori && matchSearch;
   });
 
   const stats = STATUS_LIST.map((s) => ({
@@ -204,6 +206,8 @@ export default function AdminDashboard() {
               setSearchQuery={setSearchQuery}
               filterStatus={filterStatus}
               setFilterStatus={setFilterStatus}
+              filterKategori={filterKategori}
+              setFilterKategori={setFilterKategori}
               filteredTickets={filteredTickets}
             />
           )}

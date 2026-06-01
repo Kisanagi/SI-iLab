@@ -2,6 +2,15 @@ import TicketCard from "./TicketCard.jsx";
 
 const STATUS_LIST = ["Menunggu", "Diproses", "Selesai", "Ditolak"];
 
+// label = tampilan tombol, value = nilai kategori di database
+const KATEGORI_OPTIONS = [
+  { label: "Semua", value: "Semua" },
+  { label: "Enrollment", value: "Enrollment" },
+  { label: "Pengulangan", value: "Pendaftaran Pengulangan Praktikum" },
+  { label: "Kendala Akun", value: "Kendala Akun" },
+  { label: "Lainnya", value: "Lainnya" },
+];
+
 export default function TicketSection({
   tickets,
   loadingTickets,
@@ -11,6 +20,8 @@ export default function TicketSection({
   setSearchQuery,
   filterStatus,
   setFilterStatus,
+  filterKategori,
+  setFilterKategori,
   filteredTickets,
 }) {
   return (
@@ -31,20 +42,41 @@ export default function TicketSection({
             placeholder="Cari nama, NPM, atau kode tiket..."
             className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-light"
           />
-          <div className="flex gap-2 flex-wrap">
-            {["Semua", ...STATUS_LIST].map((s) => (
-              <button
-                key={s}
-                onClick={() => setFilterStatus(s)}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                  filterStatus === s
-                    ? "bg-primary text-white"
-                    : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                }`}
-              >
-                {s}
-              </button>
-            ))}
+          <div>
+            <p className="text-xs text-gray-400 mb-1">Status</p>
+            <div className="flex gap-2 flex-wrap">
+              {["Semua", ...STATUS_LIST].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setFilterStatus(s)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                    filterStatus === s
+                      ? "bg-primary text-white"
+                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs text-gray-400 mb-1">Kategori</p>
+            <div className="flex gap-2 flex-wrap">
+              {KATEGORI_OPTIONS.map(({ label, value }) => (
+                <button
+                  key={value}
+                  onClick={() => setFilterKategori(value)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                    filterKategori === value
+                      ? "bg-primary text-white"
+                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
