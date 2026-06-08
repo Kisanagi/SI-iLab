@@ -17,16 +17,16 @@ router.get('/:npm', async (req, res) => {
   res.json(data);
 });
 
-// DELETE /history/:npm — hapus semua riwayat chat berdasarkan NPM
+// DELETE /history/:npm — hapus semua riwayat chat dan ringkasan berdasarkan NPM
 router.delete('/:npm', async (req, res) => {
   const { npm } = req.params;
 
-  const { error } = await supabase
-    .from('chat_sessions')
-    .delete()
-    .eq('npm', npm);
+  const [{ error: errSessions }, { error: errSummary }] = await Promise.all([
+    supabase.from('chat_sessions').delete().eq('npm', npm),
+    supabase.from('chat_summaries').delete().eq('npm', npm),
+  ]);
 
-  if (error) return res.status(500).json({ error: 'Gagal menghapus riwayat chat' });
+  if (errSessions) return res.status(500).json({ error: 'Gagal menghapus riwayat chat' });
   res.json({ message: 'Riwayat chat berhasil dihapus' });
 });
 
