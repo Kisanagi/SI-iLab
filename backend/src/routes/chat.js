@@ -4,23 +4,10 @@ const { toolDefinitions, toolHandlers } = require("../tools/index");
 const { SYSTEM_PROMPT } = require("../prompts/systemPrompt");
 const { fetchKnowledgeBase } = require("../lib/knowledgeBase");
 const { processFile, uploadKrsToStorage } = require("../lib/fileUpload");
-const {
-  simpanPesan,
-  ambilPesanTerakhir,
-  ambilPesanBelumDirangkum,
-  hitungTotalPesan,
-  ambilRingkasan,
-  simpanRingkasan,
-} = require("../lib/chatSession");
-const { buatRingkasan } = require("../lib/summarizer");
+const { simpanPesan } = require("../lib/chatSession");
 
 const router = Router();
 const MODEL_REASONING = process.env.MODEL_REASONING;
-
-// Buat ringkasan baru kalau pesan sudah bertambah >= threshold sejak ringkasan terakhir
-const SUMMARY_THRESHOLD = 10;
-// Jumlah pesan terbaru yang tetap dikirim mentah ke model (selain ringkasan)
-const RECENT_MESSAGES_LIMIT = 4;
 
 // Pengaman deterministik: hapus label seperti "Catatan admin:", "Catatan dari admin:",
 // "Alasan:", "Alasan dari admin:" kalau model tetap menulisnya walau dilarang di prompt.
@@ -29,44 +16,6 @@ function bersihkanLabelCatatan(text) {
   return text
     .replace(/\b(Catatan(\s+dari)?\s+admin|Alasan(\s+dari\s+admin)?)\s*:\s*/gi, "")
     .trimStart();
-}
-
-// Bangun konteks percakapan dari ringkasan + pesan terbaru (untuk NPM yang diketahui)
-// Kalau tidak ada NPM, kembalikan array kosong (frontend sudah kirim messages-nya sendiri)
-async function bangunKonteksMemory(npm) {
-  if (!npm) return { ringkasanTeks: null, pesanTerakhir: [] };
-
-  const [ringkasanData, pesanTerakhir] = await Promise.all([
-    ambilRingkasan(npm),
-    ambilPesanTerakhir(npm, RECENT_MESSAGES_LIMIT),
-  ]);
-
-  return {
-    ringkasanTeks: ringkasanData?.ringkasan || null,
-    pesanTerakhir,
-    jumlahSudahDirangkum: ringkasanData?.jumlah_pesan || 0,
-  };
-}
-
-// Jalankan pembuatan ringkasan di background (tidak await — tidak blokir response)
-async function perbaruiRingkasanBackground(npm, jumlahSudahDirangkum) {
-  try {
-    const totalPesan = await hitungTotalPesan(npm);
-    const pesanBaru = totalPesan - jumlahSudahDirangkum;
-
-    if (pesanBaru < SUMMARY_THRESHOLD) return;
-
-    const ringkasanLama = (await ambilRingkasan(npm))?.ringkasan || null;
-    const pesanBelumDirangkum = await ambilPesanBelumDirangkum(npm, jumlahSudahDirangkum);
-
-    if (pesanBelumDirangkum.length === 0) return;
-
-    const ringkasanBaru = await buatRingkasan(ringkasanLama, pesanBelumDirangkum);
-    await simpanRingkasan(npm, ringkasanBaru, totalPesan);
-  } catch (err) {
-    // Gagal buat ringkasan tidak boleh ganggu response utama
-    console.error("Gagal memperbarui ringkasan:", err);
-  }
 }
 
 router.post("/", async (req, res) => {
@@ -122,15 +71,6 @@ router.post("/", async (req, res) => {
       }
     }
 
-    // Bangun konteks memory (ringkasan + pesan terbaru dari DB)
-    const { ringkasanTeks, pesanTerakhir, jumlahSudahDirangkum = 0 } =
-      await bangunKonteksMemory(npm);
-
-    // Sisipkan ringkasan ke system prompt kalau ada
-    const ringkasanKonteks = ringkasanTeks
-      ? `\n\n[Ringkasan percakapan sebelumnya dengan mahasiswa ini:\n${ringkasanTeks}]`
-      : "";
-
     const now = new Date().toLocaleString("id-ID", {
       timeZone: "Asia/Jakarta",
       weekday: "long",
@@ -141,18 +81,8 @@ router.post("/", async (req, res) => {
       minute: "2-digit",
     });
 
-    // Gabungkan: system prompt + KB + ringkasan, lalu pesan terbaru dari DB, lalu pesan sesi ini
-    // Deduplikasi: kalau pesanTerakhir dari DB sudah ada di processedMessages, cukup pakai processedMessages
-    const dbMessagesAsContext = pesanTerakhir.length > 0 && processedMessages.length <= 1
-      ? pesanTerakhir
-      : [];
-
     const conversation = [
-      {
-        role: "system",
-        content: SYSTEM_PROMPT + kbText + ringkasanKonteks + `\n\n[Waktu saat ini: ${now}] WIB`,
-      },
-      ...dbMessagesAsContext,
+      { role: "system", content: SYSTEM_PROMPT + kbText + `\n\n[Waktu saat ini: ${now}] WIB` },
       ...processedMessages,
     ];
 
@@ -173,10 +103,6 @@ router.post("/", async (req, res) => {
     if (!choice.message.tool_calls || choice.message.tool_calls.length === 0) {
       const reply = bersihkanLabelCatatan(choice.message.content);
       await simpanPesan(npm, "assistant", reply);
-
-      // Perbarui ringkasan di background setelah response dikirim
-      if (npm) perbaruiRingkasanBackground(npm, jumlahSudahDirangkum);
-
       return res.json({ reply });
     }
 
@@ -265,14 +191,8 @@ router.post("/", async (req, res) => {
       currentMessages = [...currentMessages, ...extraMessages];
     }
 
-    const reply =
-      bersihkanLabelCatatan(finalChoice.message.content) ??
-      "Maaf, saya tidak dapat memproses permintaan tersebut saat ini. Silakan coba lagi.";
+    const reply = bersihkanLabelCatatan(finalChoice.message.content) ?? "Maaf, saya tidak dapat memproses permintaan tersebut saat ini. Silakan coba lagi.";
     await simpanPesan(npm, "assistant", reply);
-
-    // Perbarui ringkasan di background setelah response dikirim
-    if (npm) perbaruiRingkasanBackground(npm, jumlahSudahDirangkum);
-
     res.json({ reply });
   } catch (err) {
     console.error("Error pada /chat:", err);
