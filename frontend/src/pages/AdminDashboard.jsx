@@ -193,8 +193,8 @@ export default function AdminDashboard() {
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar — stats + filter */}
-        <aside className="w-52 shrink-0 bg-white border-r border-gray-200 overflow-y-auto p-4">
+        {/* Left Sidebar — stats + filter (hanya desktop) */}
+        <aside className="hidden lg:block w-52 shrink-0 bg-white border-r border-gray-200 overflow-y-auto p-4">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Ringkasan</p>
           <div className="space-y-2 mb-6">
             {stats.map(({ label, count }) => (
@@ -243,8 +243,8 @@ export default function AdminDashboard() {
           </div>
         </aside>
 
-        {/* Middle — tabs + list tiket */}
-        <div className="w-80 shrink-0 flex flex-col border-r border-gray-200 bg-white">
+        {/* Middle — tabs + list tiket (full width di mobile, w-80 di desktop) */}
+        <div className={`${selectedTicketId && activeTab === "tiket" ? "hidden lg:flex" : "flex"} w-full lg:w-80 shrink-0 flex-col border-r border-gray-200 bg-white`}>
           {/* Tabs */}
           <div className="flex border-b border-gray-200 shrink-0">
             <button
@@ -306,13 +306,25 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        {/* Right — detail tiket atau KB section */}
+        {/* Right — detail tiket (tersembunyi di mobile kalau belum pilih tiket) */}
         {activeTab === "tiket" && (
-          <div className="flex-1 overflow-y-auto">
+          <div className={`${selectedTicket ? "flex" : "hidden lg:flex"} flex-1 flex-col overflow-y-auto`}>
             {selectedTicket ? (
-              <div className="p-5">
-                <TicketCard ticket={selectedTicket} onUpdated={fetchTickets} />
-              </div>
+              <>
+                {/* Tombol kembali — hanya mobile */}
+                <button
+                  onClick={() => setSelectedTicketId(null)}
+                  className="lg:hidden flex items-center gap-1.5 text-sm text-primary font-medium px-4 py-3 border-b border-gray-200 bg-white shrink-0"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Kembali ke daftar
+                </button>
+                <div className="p-5">
+                  <TicketCard ticket={selectedTicket} onUpdated={fetchTickets} />
+                </div>
+              </>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-gray-400">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-3 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
