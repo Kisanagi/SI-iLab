@@ -17,10 +17,13 @@ export default function TicketCard({ ticket, onUpdated }) {
   const [catatanLoading, setCatatanLoading] = useState(false);
   const [catatanError, setCatatanError] = useState('');
   async function handleViewKrs() {
+    // Buka tab baru dulu (sinkron, langsung dari klik user) agar Safari tidak blokir popup
+    const tab = window.open('', '_blank');
     try {
       const { data } = await api.get(`/tickets/${ticket.id}/krs`);
-      window.open(data.url, '_blank');
+      if (tab) tab.location.href = data.url;
     } catch {
+      if (tab) tab.close();
       alert('File KRS tidak tersedia');
     }
   }
