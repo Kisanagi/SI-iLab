@@ -16,15 +16,18 @@ export default function TicketCard({ ticket, onUpdated }) {
   const [statusLoading, setStatusLoading] = useState(false);
   const [catatanLoading, setCatatanLoading] = useState(false);
   const [catatanError, setCatatanError] = useState('');
+  const [krsUrl, setKrsUrl] = useState(null);
+  const [krsLoading, setKrsLoading] = useState(false);
+
   async function handleViewKrs() {
-    // Buka tab baru dulu (sinkron, langsung dari klik user) agar Safari tidak blokir popup
-    const tab = window.open('', '_blank');
+    setKrsLoading(true);
     try {
       const { data } = await api.get(`/tickets/${ticket.id}/krs`);
-      if (tab) tab.location.href = data.url;
+      setKrsUrl(data.url);
     } catch {
-      if (tab) tab.close();
       alert('File KRS tidak tersedia');
+    } finally {
+      setKrsLoading(false);
     }
   }
 
@@ -205,12 +208,24 @@ export default function TicketCard({ ticket, onUpdated }) {
         </div>
         <div className="flex items-center gap-3">
           {ticket.krs_url && (
-            <button
-              onClick={handleViewKrs}
-              className="text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors"
-            >
-              Lihat KRS
-            </button>
+            krsUrl ? (
+              <a
+                href={krsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors"
+              >
+                Buka KRS ↗
+              </a>
+            ) : (
+              <button
+                onClick={handleViewKrs}
+                disabled={krsLoading}
+                className="text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors disabled:opacity-50"
+              >
+                {krsLoading ? "Memuat..." : "Lihat KRS"}
+              </button>
+            )
           )}
           <button
             onClick={handleDelete}
