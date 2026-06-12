@@ -192,6 +192,30 @@ export default function AdminDashboard() {
         </button>
       </header>
 
+      {/* Tab bar mobile — hanya tampil di mobile, selalu visible untuk navigasi */}
+      <div className="lg:hidden flex border-b border-gray-200 bg-white shrink-0">
+        <button
+          onClick={() => { setActiveTab("tiket"); setSelectedTicketId(null); }}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-medium transition-colors ${
+            activeTab === "tiket" ? "text-primary border-b-2 border-primary" : "text-gray-500"
+          }`}
+        >
+          Tiket Masuk
+          {waitingCount > 0 && (
+            <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full leading-none">{waitingCount}</span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab("kb")}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-medium transition-colors ${
+            activeTab === "kb" ? "text-primary border-b-2 border-primary" : "text-gray-500"
+          }`}
+        >
+          Knowledge Base
+          <span className="bg-gray-100 text-gray-600 text-xs px-1.5 py-0.5 rounded-full leading-none">{kbList.length}</span>
+        </button>
+      </div>
+
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar — stats + filter (hanya desktop) */}
         <aside className="hidden lg:block w-52 shrink-0 bg-white border-r border-gray-200 overflow-y-auto p-4">
@@ -244,9 +268,9 @@ export default function AdminDashboard() {
         </aside>
 
         {/* Middle — tabs + list tiket (full width di mobile, w-80 di desktop) */}
-        <div className={`${selectedTicketId && activeTab === "tiket" ? "hidden lg:flex" : "flex"} w-full lg:w-80 shrink-0 flex-col border-r border-gray-200 bg-white`}>
-          {/* Tabs */}
-          <div className="flex border-b border-gray-200 shrink-0">
+        <div className={`${(selectedTicketId && activeTab === "tiket") || activeTab === "kb" ? "hidden lg:flex" : "flex"} w-full lg:w-80 shrink-0 flex-col border-r border-gray-200 bg-white`}>
+          {/* Tabs — hanya desktop, mobile pakai tab bar di atas */}
+          <div className="hidden lg:flex border-b border-gray-200 shrink-0">
             <button
               onClick={() => setActiveTab("tiket")}
               className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-medium transition-colors ${
@@ -337,7 +361,8 @@ export default function AdminDashboard() {
         )}
 
         {activeTab === "kb" && (
-          <div ref={kbScrollRef} className="flex-1 overflow-y-auto p-5">
+          <div ref={kbScrollRef} className="flex-1 overflow-y-auto">
+            <div className="p-5">
             <KnowledgeBaseSection
               kbList={kbList}
               loadingKb={loadingKb}
@@ -352,6 +377,7 @@ export default function AdminDashboard() {
               handleKbCancel={handleKbCancel}
               kbFormRef={kbFormRef}
             />
+            </div>
           </div>
         )}
       </div>
