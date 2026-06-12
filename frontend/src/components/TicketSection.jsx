@@ -95,7 +95,7 @@ export default function TicketSection({
           Tidak ada tiket yang sesuai pencarian.
         </div>
       ) : (
-        <div className="space-y-4 pb-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-4">
           {filteredTickets.map((ticket) => (
             <TicketCard key={ticket.id} ticket={ticket} onUpdated={fetchTickets} />
           ))}

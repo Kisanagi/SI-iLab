@@ -157,7 +157,7 @@ export default function AdminDashboard() {
         </button>
       </header>
 
-      <div className="flex-1 overflow-hidden w-full px-6 py-5 flex flex-col">
+      <div className="flex-1 overflow-hidden max-w-7xl w-full mx-auto px-6 py-5 flex flex-col">
         <StatsCards stats={stats} />
 
         {/* Tabs */}
