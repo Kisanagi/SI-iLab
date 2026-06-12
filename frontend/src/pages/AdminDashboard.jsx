@@ -1,33 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../lib/api.js";
+import StatsCards from "../components/StatsCards.jsx";
 import TicketSection from "../components/TicketSection.jsx";
 import KnowledgeBaseSection from "../components/KnowledgeBaseSection.jsx";
 import TicketCard from "../components/TicketCard.jsx";
 
 const STATUS_LIST = ["Menunggu", "Diproses", "Selesai", "Ditolak"];
-
-const KATEGORI_OPTIONS = [
-  { label: "Semua", value: "Semua" },
-  { label: "Enrollment", value: "Enrollment" },
-  { label: "Pengulangan", value: "Pendaftaran Pengulangan Praktikum" },
-  { label: "Kendala Akun", value: "Kendala Akun" },
-  { label: "Lainnya", value: "Lainnya" },
-];
-
-const STAT_DOT = {
-  Menunggu: "bg-gray-400",
-  Diproses: "bg-blue-500",
-  Selesai: "bg-green-500",
-  Ditolak: "bg-red-500",
-};
-
-const STAT_NUM = {
-  Menunggu: "text-gray-700",
-  Diproses: "text-blue-600",
-  Selesai: "text-green-600",
-  Ditolak: "text-red-600",
-};
 
 export default function AdminDashboard() {
   const [tickets, setTickets] = useState([]);
@@ -45,7 +24,6 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("tiket");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("Semua");
-  const [filterKategori, setFilterKategori] = useState("Semua");
 
   const navigate = useNavigate();
   const kbFormRef = useRef(null);
@@ -84,7 +62,6 @@ export default function AdminDashboard() {
     return () => clearInterval(interval);
   }, [fetchTickets, fetchKb]);
 
-  // Kalau tiket yang dipilih terhapus, reset selectedTicket
   useEffect(() => {
     if (selectedTicketId && !tickets.find((t) => t.id === selectedTicketId)) {
       setSelectedTicketId(null);
@@ -122,12 +99,8 @@ export default function AdminDashboard() {
     setEditingId(item.id);
     setActiveTab("kb");
     setTimeout(() => {
-      if (kbScrollRef.current) {
-        kbScrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
-      }
-      if (kbFormRef.current) {
-        kbFormRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
+      if (kbScrollRef.current) kbScrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
+      if (kbFormRef.current) kbFormRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 50);
   }
 
@@ -149,14 +122,13 @@ export default function AdminDashboard() {
 
   const filteredTickets = tickets.filter((t) => {
     const matchStatus = filterStatus === "Semua" || t.status === filterStatus;
-    const matchKategori = filterKategori === "Semua" || t.kategori === filterKategori;
     const q = searchQuery.toLowerCase();
     const matchSearch =
       !q ||
       (t.nama_mahasiswa || "").toLowerCase().includes(q) ||
       (t.npm || "").toLowerCase().includes(q) ||
       (t.kode_tiket || "").toLowerCase().includes(q);
-    return matchStatus && matchKategori && matchSearch;
+    return matchStatus && matchSearch;
   });
 
   const stats = STATUS_LIST.map((s) => ({
@@ -167,9 +139,9 @@ export default function AdminDashboard() {
   const waitingCount = tickets.filter((t) => t.status === "Menunggu").length;
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Header */}
-      <header className="bg-primary text-white px-5 py-3 flex items-center justify-between shrink-0 shadow-md">
+      <header className="bg-primary text-white px-5 py-3 flex items-center justify-between shrink-0 shadow-md sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center shrink-0">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -192,177 +164,69 @@ export default function AdminDashboard() {
         </button>
       </header>
 
-      {/* Tab bar mobile — hanya tampil di mobile, selalu visible untuk navigasi */}
-      <div className="lg:hidden flex border-b border-gray-200 bg-white shrink-0">
-        <button
-          onClick={() => { setActiveTab("tiket"); setSelectedTicketId(null); }}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-medium transition-colors ${
-            activeTab === "tiket" ? "text-primary border-b-2 border-primary" : "text-gray-500"
-          }`}
-        >
-          Tiket Masuk
-          {waitingCount > 0 && (
-            <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full leading-none">{waitingCount}</span>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab("kb")}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-medium transition-colors ${
-            activeTab === "kb" ? "text-primary border-b-2 border-primary" : "text-gray-500"
-          }`}
-        >
-          Knowledge Base
-          <span className="bg-gray-100 text-gray-600 text-xs px-1.5 py-0.5 rounded-full leading-none">{kbList.length}</span>
-        </button>
-      </div>
+      {/* Main content */}
+      <main ref={kbScrollRef} className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar — stats + filter (hanya desktop) */}
-        <aside className="hidden lg:block w-52 shrink-0 bg-white border-r border-gray-200 overflow-y-auto p-4">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Ringkasan</p>
-          <div className="space-y-2 mb-6">
-            {stats.map(({ label, count }) => (
-              <div key={label} className="flex items-center justify-between py-0.5">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${STAT_DOT[label]}`} />
-                  <span className="text-sm text-gray-600">{label}</span>
-                </div>
-                <span className={`font-bold text-sm ${STAT_NUM[label]}`}>{count}</span>
-              </div>
-            ))}
-          </div>
+          {/* Stats */}
+          <StatsCards stats={stats} />
 
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Status</p>
-          <div className="flex flex-wrap gap-1.5 mb-6">
-            {["Semua", ...STATUS_LIST].map((s) => (
-              <button
-                key={s}
-                onClick={() => setFilterStatus(s)}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                  filterStatus === s
-                    ? "bg-primary text-white"
-                    : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Kategori</p>
-          <div className="flex flex-wrap gap-1.5">
-            {KATEGORI_OPTIONS.map(({ label, value }) => (
-              <button
-                key={value}
-                onClick={() => setFilterKategori(value)}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                  filterKategori === value
-                    ? "bg-primary text-white"
-                    : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </aside>
-
-        {/* Middle — tabs + list tiket (full width di mobile, w-80 di desktop) */}
-        <div className={`${(selectedTicketId && activeTab === "tiket") || activeTab === "kb" ? "hidden lg:flex" : "flex"} w-full lg:w-80 shrink-0 flex-col border-r border-gray-200 bg-white`}>
-          {/* Tabs — hanya desktop, mobile pakai tab bar di atas */}
-          <div className="hidden lg:flex border-b border-gray-200 shrink-0">
+          {/* Tabs */}
+          <div className="flex gap-2 mb-5">
             <button
               onClick={() => setActiveTab("tiket")}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-medium transition-colors ${
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors border ${
                 activeTab === "tiket"
-                  ? "text-primary border-b-2 border-primary"
-                  : "text-gray-500 hover:text-gray-700"
+                  ? "bg-primary text-white border-primary"
+                  : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"
               }`}
             >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+              </svg>
               Tiket Masuk
-              {waitingCount > 0 && (
-                <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full leading-none">
-                  {waitingCount}
-                </span>
-              )}
+              <span className={`text-xs px-1.5 py-0.5 rounded-full leading-none font-semibold ${
+                activeTab === "tiket" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
+              }`}>
+                {waitingCount > 0 ? waitingCount : tickets.length}
+              </span>
             </button>
             <button
               onClick={() => setActiveTab("kb")}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-medium transition-colors ${
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors border ${
                 activeTab === "kb"
-                  ? "text-primary border-b-2 border-primary"
-                  : "text-gray-500 hover:text-gray-700"
+                  ? "bg-primary text-white border-primary"
+                  : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"
               }`}
             >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
               Knowledge Base
-              <span className="bg-gray-100 text-gray-600 text-xs px-1.5 py-0.5 rounded-full leading-none">
+              <span className={`text-xs px-1.5 py-0.5 rounded-full leading-none font-semibold ${
+                activeTab === "kb" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
+              }`}>
                 {kbList.length}
               </span>
             </button>
           </div>
 
+          {/* Konten tab */}
           {activeTab === "tiket" && (
-            <>
-              <div className="p-3 border-b border-gray-100 shrink-0">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari nama, NPM, atau kode tiket..."
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-light"
-                />
-              </div>
-              <TicketSection
-                tickets={tickets}
-                loadingTickets={loadingTickets}
-                errorTickets={errorTickets}
-                filteredTickets={filteredTickets}
-                selectedTicketId={selectedTicketId}
-                onSelectTicket={setSelectedTicketId}
-              />
-            </>
+            <TicketSection
+              tickets={tickets}
+              loadingTickets={loadingTickets}
+              errorTickets={errorTickets}
+              filteredTickets={filteredTickets}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              filterStatus={filterStatus}
+              setFilterStatus={setFilterStatus}
+              onSelectTicket={setSelectedTicketId}
+            />
           )}
 
           {activeTab === "kb" && (
-            <div className="flex-1 flex items-center justify-center text-gray-400 text-sm px-4 text-center">
-              Kelola knowledge base di panel sebelah kanan
-            </div>
-          )}
-        </div>
-
-        {/* Right — detail tiket (tersembunyi di mobile kalau belum pilih tiket) */}
-        {activeTab === "tiket" && (
-          <div className={`${selectedTicket ? "flex" : "hidden lg:flex"} flex-1 flex-col overflow-y-auto`}>
-            {selectedTicket ? (
-              <>
-                {/* Tombol kembali — hanya mobile */}
-                <button
-                  onClick={() => setSelectedTicketId(null)}
-                  className="lg:hidden flex items-center gap-1.5 text-sm text-primary font-medium px-4 py-3 border-b border-gray-200 bg-white shrink-0"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Kembali ke daftar
-                </button>
-                <div className="p-5">
-                  <TicketCard ticket={selectedTicket} onUpdated={fetchTickets} />
-                </div>
-              </>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-3 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                <p className="text-sm">Pilih tiket untuk melihat detail</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === "kb" && (
-          <div ref={kbScrollRef} className="flex-1 overflow-y-auto">
-            <div className="p-5">
             <KnowledgeBaseSection
               kbList={kbList}
               loadingKb={loadingKb}
@@ -377,10 +241,40 @@ export default function AdminDashboard() {
               handleKbCancel={handleKbCancel}
               kbFormRef={kbFormRef}
             />
+          )}
+        </div>
+      </main>
+
+      {/* Modal detail tiket */}
+      {selectedTicket && (
+        <div
+          className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={() => setSelectedTicketId(null)}
+        >
+          <div
+            className="bg-white w-full sm:max-w-2xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
+              <div>
+                <p className="text-xs text-gray-400">{selectedTicket.kode_tiket}</p>
+                <h2 className="font-semibold text-gray-800">{selectedTicket.judul}</h2>
+              </div>
+              <button
+                onClick={() => setSelectedTicketId(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-5">
+              <TicketCard ticket={selectedTicket} onUpdated={fetchTickets} />
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
