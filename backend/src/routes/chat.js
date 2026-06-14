@@ -14,7 +14,7 @@ const MODEL_REASONING = process.env.MODEL_REASONING;
 function bersihkanLabelCatatan(text) {
   if (!text) return text;
   return text
-    .replace(/\b(Catatan(\s+dari)?\s+admin|Alasan(\s+dari\s+admin)?)\s*:\s*/gi, "")
+    .replace(/\b(Catatan(\s+dari)?\s+admin(nya)?|Keterangan\s+admin(nya)?|Alasan(\s+dari\s+admin)?|Admin\s+menyebutkan|Admin\s+mengatakan)\s*:?\s*/gi, "")
     .trimStart();
 }
 
