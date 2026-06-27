@@ -13,6 +13,7 @@ const PORT = process.env.PORT || 3000;
 
 const allowedOrigins = [
   'https://si-ilab.vercel.app',
+  'https://si-ilab.up.railway.app',
   'http://localhost:5173',
 ];
 app.use(cors({
