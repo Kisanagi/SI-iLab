@@ -138,6 +138,7 @@ router.post("/", async (req, res) => {
           fnArgs.krs_url = krsStoragePath;
         }
         toolResult = await handler(fnArgs);
+        console.log(`[tool] ${fnName} result:`, JSON.stringify(toolResult));
         if (fnName === "buat_tiket" && toolResult?.kode_tiket) {
           tiketBaru = toolResult.kode_tiket;
         }
