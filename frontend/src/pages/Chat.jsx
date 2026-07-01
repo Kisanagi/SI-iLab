@@ -36,14 +36,15 @@ export default function Chat() {
     return `Status tiket ${kode} kamu diperbarui menjadi: ${tiket.status}.`;
   }
 
-  function startPolling(kode) {
+  function startPolling(kode, npmValue) {
     const id = setInterval(async () => {
       try {
         const { data: tiket } = await api.get(`/status/${kode}`);
         if (tiket.status !== "Menunggu") {
           stopPolling(id);
-          setMessages((prev) => [...prev, { role: "assistant", content: pesanStatusTiket(tiket) }]);
-          api.patch(`/status/${kode}/ack`).catch(() => {});
+          const content = pesanStatusTiket(tiket);
+          setMessages((prev) => [...prev, { role: "assistant", content }]);
+          api.patch(`/status/${kode}/ack`, { npm: npmValue, content }).catch(() => {});
         }
       } catch {
         stopPolling(id); // tiket dihapus (404) atau error → hentikan polling ini
@@ -60,10 +61,11 @@ export default function Chat() {
       const { data: tickets } = await api.get(`/tickets/npm/${npmValue}`);
       for (const t of tickets) {
         if (t.status === "Menunggu") {
-          startPolling(t.kode_tiket);
+          startPolling(t.kode_tiket, npmValue);
         } else if (!t.notifikasi_terkirim) {
-          setMessages((prev) => [...prev, { role: "assistant", content: pesanStatusTiket(t) }]);
-          api.patch(`/status/${t.kode_tiket}/ack`).catch(() => {});
+          const content = pesanStatusTiket(t);
+          setMessages((prev) => [...prev, { role: "assistant", content }]);
+          api.patch(`/status/${t.kode_tiket}/ack`, { npm: npmValue, content }).catch(() => {});
         }
       }
     } catch (err) {
@@ -218,7 +220,7 @@ export default function Chat() {
       setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
 
       if (data.tiket_id) {
-        startPolling(data.tiket_id);
+        startPolling(data.tiket_id, npm);
       }
     } catch {
       setMessages((prev) => [

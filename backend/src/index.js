@@ -40,13 +40,17 @@ app.get('/status/:kode_tiket', async (req, res) => {
   res.json(data);
 });
 
-// Public: tandai notifikasi status tiket sudah ditampilkan ke mahasiswa
+// Public: tandai notifikasi status tiket sudah ditampilkan ke mahasiswa,
+// sekaligus simpan pesannya ke chat_sessions supaya tidak hilang saat reload.
+const { simpanPesan } = require('./lib/chatSession');
 app.patch('/status/:kode_tiket/ack', async (req, res) => {
+  const { npm, content } = req.body || {};
   const { error } = await supabase
     .from('tickets')
     .update({ notifikasi_terkirim: true })
     .eq('kode_tiket', req.params.kode_tiket);
   if (error) return res.status(500).json({ error: 'Gagal update' });
+  if (npm && content) await simpanPesan(npm, 'assistant', content);
   res.json({ ok: true });
 });
 
