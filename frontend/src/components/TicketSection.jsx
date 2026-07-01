@@ -17,6 +17,7 @@ export default function TicketSection({
   filterStatus,
   setFilterStatus,
   onSelectTicket,
+  onDeleteTicket,
 }) {
   return (
     <div>
@@ -109,9 +110,17 @@ export default function TicketSection({
                         })}
                       </td>
                       <td className="px-4 py-4">
-                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap ${STATUS_COLOR[ticket.status]}`}>
-                          {ticket.status}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap ${STATUS_COLOR[ticket.status]}`}>
+                            {ticket.status}
+                          </span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onDeleteTicket(ticket); }}
+                            className="text-xs text-red-400 hover:text-red-600 font-medium transition-colors whitespace-nowrap"
+                          >
+                            Hapus
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))

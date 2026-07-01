@@ -73,6 +73,17 @@ export default function AdminDashboard() {
     navigate("/admin/login");
   }
 
+  async function handleDeleteTicket(ticket) {
+    if (!confirm(`Hapus tiket "${ticket.kode_tiket} — ${ticket.judul}"?`)) return;
+    try {
+      await api.delete(`/tickets/${ticket.id}`);
+      if (selectedTicketId === ticket.id) setSelectedTicketId(null);
+      await fetchTickets();
+    } catch {
+      alert('Gagal menghapus tiket');
+    }
+  }
+
   async function handleKbSubmit(e) {
     e.preventDefault();
     if (!kbForm.topik.trim() || !kbForm.konten.trim()) return;
@@ -223,6 +234,7 @@ export default function AdminDashboard() {
               filterStatus={filterStatus}
               setFilterStatus={setFilterStatus}
               onSelectTicket={setSelectedTicketId}
+              onDeleteTicket={handleDeleteTicket}
             />
           )}
 
