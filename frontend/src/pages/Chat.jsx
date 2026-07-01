@@ -20,7 +20,12 @@ export default function Chat() {
   const bottomRef = useRef(null);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
-  const pollingRef = useRef(null);
+  const pollingRef = useRef([]);
+
+  function stopPolling(id) {
+    clearInterval(id);
+    pollingRef.current = pollingRef.current.filter((x) => x !== id);
+  }
 
   const isWelcomeScreen = messages.length === 0 && !loadingHistory;
 
@@ -37,7 +42,7 @@ export default function Chat() {
   }, [messages, loading]);
 
   useEffect(() => {
-    return () => clearInterval(pollingRef.current);
+    return () => pollingRef.current.forEach(clearInterval);
   }, []);
 
   async function fetchHistory(npmValue) {
@@ -168,12 +173,13 @@ export default function Chat() {
 
       if (data.tiket_id) {
         const kode = data.tiket_id;
-        pollingRef.current = setInterval(async () => {
+        // Tiap interval clear dirinya sendiri lewat id lokal (bukan shared ref),
+        // supaya polling tiket lama tidak jalan abadi saat tiket baru dibuat / tiket dihapus.
+        const id = setInterval(async () => {
           try {
             const { data: tiket } = await api.get(`/status/${kode}`);
             if (tiket.status !== "Menunggu") {
-              clearInterval(pollingRef.current);
-              pollingRef.current = null;
+              stopPolling(id);
               const pesanStatus = tiket.status === "Selesai"
                 ? `Tiket ${kode} kamu sudah selesai diproses.${tiket.catatan_admin ? " " + tiket.catatan_admin : ""}`
                 : tiket.status === "Ditolak"
@@ -182,10 +188,10 @@ export default function Chat() {
               setMessages((prev) => [...prev, { role: "assistant", content: pesanStatus }]);
             }
           } catch {
-            clearInterval(pollingRef.current);
-            pollingRef.current = null;
+            stopPolling(id); // tiket dihapus (404) atau error → hentikan polling ini
           }
         }, 15000);
+        pollingRef.current.push(id);
       }
     } catch {
       setMessages((prev) => [
