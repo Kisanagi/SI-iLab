@@ -138,7 +138,6 @@ router.post("/", async (req, res) => {
           fnArgs.krs_url = krsStoragePath;
         }
         toolResult = await handler(fnArgs);
-        console.log(`[tool] ${fnName} result:`, JSON.stringify(toolResult));
         if (fnName === "buat_tiket" && toolResult?.kode_tiket) {
           tiketBaru = toolResult.kode_tiket;
         }
@@ -190,6 +189,9 @@ router.post("/", async (req, res) => {
         try {
           if (fnName === "buat_tiket" && krsStoragePath) fnArgs.krs_url = krsStoragePath;
           toolResult = handler ? await handler(fnArgs) : { error: `Tool tidak dikenal: ${fnName}` };
+          if (fnName === "buat_tiket" && toolResult?.kode_tiket) {
+            tiketBaru = toolResult.kode_tiket;
+          }
         } catch (err) {
           toolResult = { error: err.message };
         }
