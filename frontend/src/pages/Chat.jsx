@@ -20,6 +20,7 @@ export default function Chat() {
   const bottomRef = useRef(null);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
+  const pollingRef = useRef(null);
 
   const isWelcomeScreen = messages.length === 0 && !loadingHistory;
 
@@ -34,6 +35,10 @@ export default function Chat() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
+
+  useEffect(() => {
+    return () => clearInterval(pollingRef.current);
+  }, []);
 
   async function fetchHistory(npmValue) {
     setLoadingHistory(true);
@@ -160,6 +165,28 @@ export default function Chat() {
 
       const { data } = await api.post("/chat", payload);
       setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
+
+      if (data.tiket_id) {
+        const kode = data.tiket_id;
+        pollingRef.current = setInterval(async () => {
+          try {
+            const { data: tiket } = await api.get(`/status/${kode}`);
+            if (tiket.status !== "Menunggu") {
+              clearInterval(pollingRef.current);
+              pollingRef.current = null;
+              const pesanStatus = tiket.status === "Selesai"
+                ? `Tiket ${kode} kamu sudah selesai diproses.${tiket.catatan_admin ? " " + tiket.catatan_admin : ""}`
+                : tiket.status === "Ditolak"
+                ? `Tiket ${kode} kamu ditolak.${tiket.catatan_admin ? " " + tiket.catatan_admin : ""}`
+                : `Status tiket ${kode} kamu diperbarui menjadi: ${tiket.status}.`;
+              setMessages((prev) => [...prev, { role: "assistant", content: pesanStatus }]);
+            }
+          } catch {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+          }
+        }, 15000);
+      }
     } catch {
       setMessages((prev) => [
         ...prev,

@@ -106,6 +106,9 @@ router.post("/", async (req, res) => {
       return res.json({ reply });
     }
 
+    // Catat kode_tiket jika ada tool buat_tiket
+    let tiketBaru = null;
+
     // Sanitize nama tool di choice.message sebelum masuk ke history
     const sanitizedChoiceMessage = {
       ...choice.message,
@@ -135,6 +138,9 @@ router.post("/", async (req, res) => {
           fnArgs.krs_url = krsStoragePath;
         }
         toolResult = await handler(fnArgs);
+        if (fnName === "buat_tiket" && toolResult?.kode_tiket) {
+          tiketBaru = toolResult.kode_tiket;
+        }
       } catch (err) {
         toolResult = { error: err.message };
       }
@@ -193,7 +199,7 @@ router.post("/", async (req, res) => {
 
     const reply = bersihkanLabelCatatan(finalChoice.message.content) ?? "Maaf, saya tidak dapat memproses permintaan tersebut saat ini. Silakan coba lagi.";
     await simpanPesan(npm, "assistant", reply);
-    res.json({ reply });
+    res.json({ reply, ...(tiketBaru ? { tiket_id: tiketBaru } : {}) });
   } catch (err) {
     console.error("Error pada /chat:", err);
     res.status(500).json({ error: "Terjadi kesalahan pada server" });

@@ -33,6 +33,18 @@ app.use('/auth', authRouter);
 app.use('/history', historyRouter);
 app.use('/knowledge-base', knowledgeBaseRouter);
 
+// Public: cek status tiket by kode_tiket (untuk polling frontend)
+const supabase = require('./lib/supabase');
+app.get('/status/:kode_tiket', async (req, res) => {
+  const { data, error } = await supabase
+    .from('tickets')
+    .select('kode_tiket, status, catatan_admin')
+    .eq('kode_tiket', req.params.kode_tiket)
+    .single();
+  if (error || !data) return res.status(404).json({ error: 'Tiket tidak ditemukan' });
+  res.json(data);
+});
+
 app.use((err, req, res, next) => {
   console.error(err);
   res.status(500).json({ error: 'Internal server error' });
