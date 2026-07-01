@@ -27,6 +27,50 @@ export default function Chat() {
     pollingRef.current = pollingRef.current.filter((x) => x !== id);
   }
 
+  function pesanStatusTiket(tiket) {
+    const kode = tiket.kode_tiket;
+    if (tiket.status === "Selesai")
+      return `Tiket ${kode} kamu sudah selesai diproses.${tiket.catatan_admin ? " " + tiket.catatan_admin : ""}`;
+    if (tiket.status === "Ditolak")
+      return `Tiket ${kode} kamu ditolak.${tiket.catatan_admin ? " " + tiket.catatan_admin : ""}`;
+    return `Status tiket ${kode} kamu diperbarui menjadi: ${tiket.status}.`;
+  }
+
+  function startPolling(kode) {
+    const id = setInterval(async () => {
+      try {
+        const { data: tiket } = await api.get(`/status/${kode}`);
+        if (tiket.status !== "Menunggu") {
+          stopPolling(id);
+          setMessages((prev) => [...prev, { role: "assistant", content: pesanStatusTiket(tiket) }]);
+          api.patch(`/status/${kode}/ack`).catch(() => {});
+        }
+      } catch {
+        stopPolling(id); // tiket dihapus (404) atau error → hentikan polling ini
+      }
+    }, 15000);
+    pollingRef.current.push(id);
+  }
+
+  // Saat halaman dibuka: tampilkan pesan tiket yang selesai/ditolak tapi belum
+  // pernah diumumkan (mahasiswa sempat menutup/reload sebelum sempat lihat),
+  // dan lanjutkan polling untuk tiket yang masih Menunggu/Diproses.
+  async function checkPendingTickets(npmValue) {
+    try {
+      const { data: tickets } = await api.get(`/tickets/npm/${npmValue}`);
+      for (const t of tickets) {
+        if (t.status === "Menunggu") {
+          startPolling(t.kode_tiket);
+        } else if (!t.notifikasi_terkirim) {
+          setMessages((prev) => [...prev, { role: "assistant", content: pesanStatusTiket(t) }]);
+          api.patch(`/status/${t.kode_tiket}/ack`).catch(() => {});
+        }
+      }
+    } catch (err) {
+      console.error("Gagal cek pembaruan tiket:", err);
+    }
+  }
+
   const isWelcomeScreen = messages.length === 0 && !loadingHistory;
 
   useEffect(() => {
@@ -34,6 +78,7 @@ export default function Chat() {
       setShowNpmPopup(true);
     } else {
       fetchHistory(npm);
+      checkPendingTickets(npm);
     }
   }, []);
 
@@ -74,6 +119,7 @@ export default function Chat() {
       setShowNpmPopup(false);
       setPopupClosing(false);
       fetchHistory(trimmed);
+      checkPendingTickets(trimmed);
     }, 180);
   }
 
@@ -172,26 +218,7 @@ export default function Chat() {
       setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
 
       if (data.tiket_id) {
-        const kode = data.tiket_id;
-        // Tiap interval clear dirinya sendiri lewat id lokal (bukan shared ref),
-        // supaya polling tiket lama tidak jalan abadi saat tiket baru dibuat / tiket dihapus.
-        const id = setInterval(async () => {
-          try {
-            const { data: tiket } = await api.get(`/status/${kode}`);
-            if (tiket.status !== "Menunggu") {
-              stopPolling(id);
-              const pesanStatus = tiket.status === "Selesai"
-                ? `Tiket ${kode} kamu sudah selesai diproses.${tiket.catatan_admin ? " " + tiket.catatan_admin : ""}`
-                : tiket.status === "Ditolak"
-                ? `Tiket ${kode} kamu ditolak.${tiket.catatan_admin ? " " + tiket.catatan_admin : ""}`
-                : `Status tiket ${kode} kamu diperbarui menjadi: ${tiket.status}.`;
-              setMessages((prev) => [...prev, { role: "assistant", content: pesanStatus }]);
-            }
-          } catch {
-            stopPolling(id); // tiket dihapus (404) atau error → hentikan polling ini
-          }
-        }, 15000);
-        pollingRef.current.push(id);
+        startPolling(data.tiket_id);
       }
     } catch {
       setMessages((prev) => [
