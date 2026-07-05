@@ -64,8 +64,8 @@ export default function KnowledgeBaseSection({
                 value={kbForm.konten}
                 onChange={(e) => setKbForm({ ...kbForm, konten: e.target.value })}
                 placeholder="Contoh: Lab buka Senin-Jumat pukul 08.00-17.00 WIB..."
-                rows={4}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-light resize-none"
+                rows={10}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-light resize-y"
               />
             </div>
             <div className="flex gap-2">
