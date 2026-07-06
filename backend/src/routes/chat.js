@@ -18,6 +18,50 @@ function bersihkanLabelCatatan(text) {
     .trimStart();
 }
 
+// Model kadang menulis nama tool dengan noise token di belakangnya (mis. dari model open-source
+// yang kurang rapi) — potong sebelum dicocokkan ke toolHandlers.
+function sanitizeToolCallName(name) {
+  return name.replace(/<\|[^|]*\|>[^"]*$/, "").trim();
+}
+
+// Jalankan semua tool_calls dari satu balasan model, kembalikan pesan "tool" untuk
+// dikirim balik ke model + kode_tiket kalau ada buat_tiket yang berhasil.
+async function jalankanToolCalls(toolCalls, krsStoragePath) {
+  let tiketBaru = null;
+  const messages = [];
+  for (const toolCall of toolCalls) {
+    const fnName = toolCall.function.name;
+    const fnArgs = JSON.parse(toolCall.function.arguments);
+    const handler = toolHandlers[fnName];
+
+    let toolResult;
+    try {
+      if (fnName === "buat_tiket" && krsStoragePath) {
+        fnArgs.krs_url = krsStoragePath;
+      }
+      toolResult = handler ? await handler(fnArgs) : { error: `Tool tidak dikenal: ${fnName}` };
+      if (fnName === "buat_tiket" && toolResult?.kode_tiket) {
+        tiketBaru = toolResult.kode_tiket;
+      }
+    } catch (err) {
+      toolResult = { error: err.message };
+    }
+
+    messages.push({ role: "tool", tool_call_id: toolCall.id, content: JSON.stringify(toolResult) });
+  }
+  return { messages, tiketBaru };
+}
+
+function sanitizeToolCalls(message) {
+  return {
+    ...message,
+    tool_calls: message.tool_calls.map((tc) => ({
+      ...tc,
+      function: { ...tc.function, name: sanitizeToolCallName(tc.function.name) },
+    })),
+  };
+}
+
 router.post("/", async (req, res) => {
   const { messages, npm, file } = req.body;
 
@@ -106,53 +150,13 @@ router.post("/", async (req, res) => {
       return res.json({ reply });
     }
 
-    // Catat kode_tiket jika ada tool buat_tiket
     let tiketBaru = null;
 
-    // Sanitize nama tool di choice.message sebelum masuk ke history
-    const sanitizedChoiceMessage = {
-      ...choice.message,
-      tool_calls: choice.message.tool_calls.map((tc) => ({
-        ...tc,
-        function: {
-          ...tc.function,
-          name: tc.function.name.replace(/<\|[^|]*\|>[^"]*$/, "").trim(),
-        },
-      })),
-    };
+    const sanitizedChoiceMessage = sanitizeToolCalls(choice.message);
+    const firstRound = await jalankanToolCalls(sanitizedChoiceMessage.tool_calls, krsStoragePath);
+    tiketBaru = firstRound.tiketBaru;
 
-    const toolCallMessages = [sanitizedChoiceMessage];
-
-    for (const toolCall of sanitizedChoiceMessage.tool_calls) {
-      const fnName = toolCall.function.name;
-      const fnArgs = JSON.parse(toolCall.function.arguments);
-
-      const handler = toolHandlers[fnName];
-      if (!handler) {
-        return res.status(500).json({ error: `Tool tidak dikenal: ${fnName}` });
-      }
-
-      let toolResult;
-      try {
-        if (fnName === "buat_tiket" && krsStoragePath) {
-          fnArgs.krs_url = krsStoragePath;
-        }
-        toolResult = await handler(fnArgs);
-        if (fnName === "buat_tiket" && toolResult?.kode_tiket) {
-          tiketBaru = toolResult.kode_tiket;
-        }
-      } catch (err) {
-        toolResult = { error: err.message };
-      }
-
-      toolCallMessages.push({
-        role: "tool",
-        tool_call_id: toolCall.id,
-        content: JSON.stringify(toolResult),
-      });
-    }
-
-    let currentMessages = [...conversation, ...toolCallMessages];
+    let currentMessages = [...conversation, sanitizedChoiceMessage, ...firstRound.messages];
     let finalChoice;
 
     for (let i = 0; i < 5; i++) {
@@ -169,35 +173,11 @@ router.post("/", async (req, res) => {
         break;
       }
 
-      const sanitizedFinalMessage = {
-        ...finalChoice.message,
-        tool_calls: finalChoice.message.tool_calls.map((tc) => ({
-          ...tc,
-          function: {
-            ...tc.function,
-            name: tc.function.name.replace(/<\|[^|]*\|>[^"]*$/, "").trim(),
-          },
-        })),
-      };
+      const sanitizedFinalMessage = sanitizeToolCalls(finalChoice.message);
+      const round = await jalankanToolCalls(sanitizedFinalMessage.tool_calls, krsStoragePath);
+      if (round.tiketBaru) tiketBaru = round.tiketBaru;
 
-      const extraMessages = [sanitizedFinalMessage];
-      for (const toolCall of sanitizedFinalMessage.tool_calls) {
-        const fnName = toolCall.function.name;
-        const fnArgs = JSON.parse(toolCall.function.arguments);
-        const handler = toolHandlers[fnName];
-        let toolResult;
-        try {
-          if (fnName === "buat_tiket" && krsStoragePath) fnArgs.krs_url = krsStoragePath;
-          toolResult = handler ? await handler(fnArgs) : { error: `Tool tidak dikenal: ${fnName}` };
-          if (fnName === "buat_tiket" && toolResult?.kode_tiket) {
-            tiketBaru = toolResult.kode_tiket;
-          }
-        } catch (err) {
-          toolResult = { error: err.message };
-        }
-        extraMessages.push({ role: "tool", tool_call_id: toolCall.id, content: JSON.stringify(toolResult) });
-      }
-      currentMessages = [...currentMessages, ...extraMessages];
+      currentMessages = [...currentMessages, sanitizedFinalMessage, ...round.messages];
     }
 
     const reply = bersihkanLabelCatatan(finalChoice.message.content) ?? "Maaf, saya tidak dapat memproses permintaan tersebut saat ini. Silakan coba lagi.";
