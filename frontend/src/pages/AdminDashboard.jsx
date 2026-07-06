@@ -5,8 +5,7 @@ import StatsCards from "../components/StatsCards.jsx";
 import TicketSection from "../components/TicketSection.jsx";
 import KnowledgeBaseSection from "../components/KnowledgeBaseSection.jsx";
 import TicketCard from "../components/TicketCard.jsx";
-
-const STATUS_LIST = ["Menunggu", "Diproses", "Selesai", "Ditolak"];
+import { STATUS_LIST } from "../lib/ticketStatus.js";
 
 export default function AdminDashboard() {
   const [tickets, setTickets] = useState([]);

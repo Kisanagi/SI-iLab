@@ -1,12 +1,6 @@
 import { useState } from 'react';
 import api from '../lib/api.js';
-
-const STATUS_COLOR = {
-  Menunggu: 'bg-gray-100 text-gray-600',
-  Diproses: 'bg-blue-100 text-blue-700',
-  Selesai: 'bg-green-100 text-green-700',
-  Ditolak: 'bg-red-100 text-red-700',
-};
+import { STATUS_COLOR } from '../lib/ticketStatus.js';
 
 export default function TicketCard({ ticket, onUpdated }) {
   const [status, setStatus] = useState(ticket.status);
