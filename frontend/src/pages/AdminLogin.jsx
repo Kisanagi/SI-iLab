@@ -73,12 +73,6 @@ export default function AdminLogin() {
             {loading ? "Memproses..." : "Login"}
           </button>
         </form>
-
-        <p className="text-center text-xs text-gray-400 mt-6">
-          <a href="/" className="hover:text-gray-600 transition-colors">
-            ← Kembali ke chat
-          </a>
-        </p>
       </div>
     </div>
   );
