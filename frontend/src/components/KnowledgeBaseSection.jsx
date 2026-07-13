@@ -115,7 +115,7 @@ export default function KnowledgeBaseSection({
         {loadingKb ? (
           <div className="text-center text-gray-400 py-16 text-sm">Memuat knowledge base...</div>
         ) : (
-          <div className="overflow-auto" style={{ maxHeight: 500 }}>
+          <div className="overflow-auto" style={{ maxHeight: 600 }}>
             <table className="w-full">
               <thead className="sticky top-0 z-10">
                 <tr className="border-b border-gray-100 bg-gray-50">
