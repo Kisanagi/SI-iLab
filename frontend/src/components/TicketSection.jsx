@@ -51,10 +51,10 @@ export default function TicketSection({
         {loadingTickets ? (
           <div className="text-center text-gray-400 py-16 text-sm">Memuat tiket...</div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-auto" style={{ maxHeight: 500 }}>
             <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50/50">
+              <thead className="sticky top-0 z-10">
+                <tr className="border-b border-gray-100 bg-gray-50">
                   <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 whitespace-nowrap">Tiket</th>
                   <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Judul</th>
                   <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">Pemohon</th>
