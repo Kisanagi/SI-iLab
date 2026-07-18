@@ -6,7 +6,6 @@ import WelcomeScreen from "../components/WelcomeScreen.jsx";
 import ChatInput from "../components/ChatInput.jsx";
 
 const MAX_FILE_SIZE_MB = 10;
-const STATUS_FINAL = ["Selesai", "Ditolak"];
 
 export default function Chat() {
   const [npm, setNpm] = useState(() => localStorage.getItem("npm") || "");
@@ -21,63 +20,6 @@ export default function Chat() {
   const bottomRef = useRef(null);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
-  const pollingRef = useRef([]);
-
-  function stopPolling(id) {
-    clearInterval(id);
-    pollingRef.current = pollingRef.current.filter((x) => x !== id);
-  }
-
-  function pesanStatusTiket(tiket) {
-    const kode = tiket.kode_tiket;
-    if (tiket.status === "Selesai")
-      return `Tiket ${kode} kamu sudah selesai diproses.${tiket.catatan_admin ? " " + tiket.catatan_admin : ""}`;
-    if (tiket.status === "Ditolak")
-      return `Tiket ${kode} kamu ditolak.${tiket.catatan_admin ? " " + tiket.catatan_admin : ""}`;
-    return `Status tiket ${kode} kamu diperbarui menjadi: ${tiket.status}.`;
-  }
-
-  function startPolling(kode, npmValue) {
-    const id = setInterval(async () => {
-      try {
-        const { data: tiket } = await api.get(`/status/${kode}`);
-        if (tiket.status !== "Menunggu" && !tiket.notifikasi_terkirim) {
-          const content = pesanStatusTiket(tiket);
-          setMessages((prev) => [...prev, { role: "assistant", content }]);
-          api.patch(`/status/${kode}/ack`, { npm: npmValue, content }).catch(() => {});
-        }
-        // Hanya berhenti di status final; status seperti "Diproses" masih bisa
-        // berubah lagi (mis. jadi "Selesai"), jadi polling tetap lanjut.
-        if (STATUS_FINAL.includes(tiket.status)) {
-          stopPolling(id);
-        }
-      } catch {
-        stopPolling(id); // tiket dihapus (404) atau error → hentikan polling ini
-      }
-    }, 15000);
-    pollingRef.current.push(id);
-  }
-
-  // Saat halaman dibuka: tampilkan pesan tiket yang selesai/ditolak tapi belum
-  // pernah diumumkan (mahasiswa sempat menutup/reload sebelum sempat lihat),
-  // dan lanjutkan polling untuk tiket yang masih Menunggu/Diproses.
-  async function checkPendingTickets(npmValue) {
-    try {
-      const { data: tickets } = await api.get(`/tickets/npm/${npmValue}`);
-      for (const t of tickets) {
-        if (t.status !== "Menunggu" && !t.notifikasi_terkirim) {
-          const content = pesanStatusTiket(t);
-          setMessages((prev) => [...prev, { role: "assistant", content }]);
-          api.patch(`/status/${t.kode_tiket}/ack`, { npm: npmValue, content }).catch(() => {});
-        }
-        if (!STATUS_FINAL.includes(t.status)) {
-          startPolling(t.kode_tiket, npmValue);
-        }
-      }
-    } catch (err) {
-      console.error("Gagal cek pembaruan tiket:", err);
-    }
-  }
 
   const isWelcomeScreen = messages.length === 0 && !loadingHistory;
 
@@ -86,17 +28,12 @@ export default function Chat() {
       setShowNpmPopup(true);
     } else {
       fetchHistory(npm);
-      checkPendingTickets(npm);
     }
   }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
-
-  useEffect(() => {
-    return () => pollingRef.current.forEach(clearInterval);
-  }, []);
 
   async function fetchHistory(npmValue) {
     setLoadingHistory(true);
@@ -127,7 +64,6 @@ export default function Chat() {
       setShowNpmPopup(false);
       setPopupClosing(false);
       fetchHistory(trimmed);
-      checkPendingTickets(trimmed);
     }, 180);
   }
 
@@ -224,10 +160,6 @@ export default function Chat() {
 
       const { data } = await api.post("/chat", payload);
       setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
-
-      if (data.tiket_id) {
-        startPolling(data.tiket_id, npm);
-      }
     } catch {
       setMessages((prev) => [
         ...prev,

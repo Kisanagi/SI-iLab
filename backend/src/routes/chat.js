@@ -25,9 +25,8 @@ function sanitizeToolCallName(name) {
 }
 
 // Jalankan semua tool_calls dari satu balasan model, kembalikan pesan "tool" untuk
-// dikirim balik ke model + kode_tiket kalau ada buat_tiket yang berhasil.
+// dikirim balik ke model.
 async function jalankanToolCalls(toolCalls, krsStoragePath) {
-  let tiketBaru = null;
   const messages = [];
   for (const toolCall of toolCalls) {
     const fnName = toolCall.function.name;
@@ -40,16 +39,13 @@ async function jalankanToolCalls(toolCalls, krsStoragePath) {
         fnArgs.krs_url = krsStoragePath;
       }
       toolResult = handler ? await handler(fnArgs) : { error: `Tool tidak dikenal: ${fnName}` };
-      if (fnName === "buat_tiket" && toolResult?.kode_tiket) {
-        tiketBaru = toolResult.kode_tiket;
-      }
     } catch (err) {
       toolResult = { error: err.message };
     }
 
     messages.push({ role: "tool", tool_call_id: toolCall.id, content: JSON.stringify(toolResult) });
   }
-  return { messages, tiketBaru };
+  return { messages };
 }
 
 function sanitizeToolCalls(message) {
@@ -150,11 +146,8 @@ router.post("/", async (req, res) => {
       return res.json({ reply });
     }
 
-    let tiketBaru = null;
-
     const sanitizedChoiceMessage = sanitizeToolCalls(choice.message);
     const firstRound = await jalankanToolCalls(sanitizedChoiceMessage.tool_calls, krsStoragePath);
-    tiketBaru = firstRound.tiketBaru;
 
     let currentMessages = [...conversation, sanitizedChoiceMessage, ...firstRound.messages];
     let finalChoice;
@@ -175,14 +168,13 @@ router.post("/", async (req, res) => {
 
       const sanitizedFinalMessage = sanitizeToolCalls(finalChoice.message);
       const round = await jalankanToolCalls(sanitizedFinalMessage.tool_calls, krsStoragePath);
-      if (round.tiketBaru) tiketBaru = round.tiketBaru;
 
       currentMessages = [...currentMessages, sanitizedFinalMessage, ...round.messages];
     }
 
     const reply = bersihkanLabelCatatan(finalChoice.message.content) ?? "Maaf, saya tidak dapat memproses permintaan tersebut saat ini. Silakan coba lagi.";
     await simpanPesan(npm, "assistant", reply);
-    res.json({ reply, ...(tiketBaru ? { tiket_id: tiketBaru } : {}) });
+    res.json({ reply });
   } catch (err) {
     console.error("Error pada /chat:", err);
     res.status(500).json({ error: "Terjadi kesalahan pada server" });

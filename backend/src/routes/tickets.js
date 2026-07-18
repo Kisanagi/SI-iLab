@@ -25,10 +25,7 @@ router.patch('/:id', async (req, res) => {
     return res.status(400).json({ error: `Status tidak valid. Pilih: ${validStatus.join(', ')}` });
   }
 
-  // Reset notifikasi_terkirim setiap kali status berubah, supaya mahasiswa
-  // tetap diberi tahu meski tiket sudah pernah pindah status sebelumnya
-  // (mis. Menunggu -> Diproses -> Selesai, masing-masing perlu notifikasi sendiri).
-  const updatePayload = { status, notifikasi_terkirim: false };
+  const updatePayload = { status };
   if (catatan_admin !== undefined) updatePayload.catatan_admin = catatan_admin;
 
   const { data, error } = await supabase
