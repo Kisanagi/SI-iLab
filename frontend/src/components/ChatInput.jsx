@@ -75,7 +75,7 @@ export default function ChatInput({
               placeholder="Ketik pesan..."
               disabled={loading || loadingHistory || showNpmPopup}
               rows={1}
-              className="flex-1 border border-gray-300 rounded-2xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-light disabled:opacity-60 resize-none overflow-hidden"
+              className="flex-1 border border-gray-300 rounded-2xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-light disabled:opacity-60 resize-none overflow-y-auto"
               style={{ minHeight: "38px" }}
             />
 
