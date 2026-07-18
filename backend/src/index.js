@@ -33,7 +33,7 @@ const supabase = require('./lib/supabase');
 app.get('/status/:kode_tiket', async (req, res) => {
   const { data, error } = await supabase
     .from('tickets')
-    .select('kode_tiket, status, catatan_admin')
+    .select('kode_tiket, status, catatan_admin, notifikasi_terkirim')
     .eq('kode_tiket', req.params.kode_tiket)
     .single();
   if (error || !data) return res.status(404).json({ error: 'Tiket tidak ditemukan' });

@@ -6,6 +6,7 @@ import WelcomeScreen from "../components/WelcomeScreen.jsx";
 import ChatInput from "../components/ChatInput.jsx";
 
 const MAX_FILE_SIZE_MB = 10;
+const STATUS_FINAL = ["Selesai", "Ditolak"];
 
 export default function Chat() {
   const [npm, setNpm] = useState(() => localStorage.getItem("npm") || "");
@@ -40,11 +41,15 @@ export default function Chat() {
     const id = setInterval(async () => {
       try {
         const { data: tiket } = await api.get(`/status/${kode}`);
-        if (tiket.status !== "Menunggu") {
-          stopPolling(id);
+        if (tiket.status !== "Menunggu" && !tiket.notifikasi_terkirim) {
           const content = pesanStatusTiket(tiket);
           setMessages((prev) => [...prev, { role: "assistant", content }]);
           api.patch(`/status/${kode}/ack`, { npm: npmValue, content }).catch(() => {});
+        }
+        // Hanya berhenti di status final; status seperti "Diproses" masih bisa
+        // berubah lagi (mis. jadi "Selesai"), jadi polling tetap lanjut.
+        if (STATUS_FINAL.includes(tiket.status)) {
+          stopPolling(id);
         }
       } catch {
         stopPolling(id); // tiket dihapus (404) atau error → hentikan polling ini
@@ -60,12 +65,13 @@ export default function Chat() {
     try {
       const { data: tickets } = await api.get(`/tickets/npm/${npmValue}`);
       for (const t of tickets) {
-        if (t.status === "Menunggu") {
-          startPolling(t.kode_tiket, npmValue);
-        } else if (!t.notifikasi_terkirim) {
+        if (t.status !== "Menunggu" && !t.notifikasi_terkirim) {
           const content = pesanStatusTiket(t);
           setMessages((prev) => [...prev, { role: "assistant", content }]);
           api.patch(`/status/${t.kode_tiket}/ack`, { npm: npmValue, content }).catch(() => {});
+        }
+        if (!STATUS_FINAL.includes(t.status)) {
+          startPolling(t.kode_tiket, npmValue);
         }
       }
     } catch (err) {
