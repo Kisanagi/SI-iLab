@@ -6,7 +6,7 @@ iLab adalah aplikasi chatbot berbasis kecerdasan buatan yang dirancang untuk mem
 
 **Untuk Mahasiswa:**
 - Chat dengan AI asisten iLab menggunakan bahasa natural
-- Membuat tiket untuk berbagai kategori: Enrollment, Pendaftaran Pengulangan Praktikum, Komplain Nilai, Kendala Akun, dan Lainnya
+- Membuat tiket untuk berbagai kategori: Registrasi Praktikum, Pendaftaran Pengulangan Praktikum, Komplain Nilai, Kendala Akun, dan Lainnya
 - Melampirkan file KRS (PDF) untuk keperluan pendaftaran pengulangan praktikum
 - Mengecek status dan riwayat tiket berdasarkan NPM
 - Mendapatkan informasi seputar iLab dari knowledge base yang dikelola admin

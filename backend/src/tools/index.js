@@ -12,7 +12,7 @@ const toolDefinitions = [
     function: {
       name: "buat_tiket",
       description:
-        "Buat tiket baru untuk permintaan yang memerlukan tindakan admin, seperti enrollment, kerusakan alat, masalah akun, booking, atau lainnya.",
+        "Buat tiket baru untuk permintaan yang memerlukan tindakan admin, seperti registrasi praktikum, kerusakan alat, masalah akun, booking, atau lainnya.",
       parameters: {
         type: "object",
         properties: {
@@ -25,7 +25,7 @@ const toolDefinitions = [
           kategori: {
             type: "string",
             enum: [
-              "Enrollment",
+              "Registrasi Praktikum",
               "Pendaftaran Pengulangan Praktikum",
               "Komplain Nilai",
               "Kendala Akun",
@@ -44,7 +44,7 @@ const toolDefinitions = [
           detail: {
             anyOf: [{ type: "object" }, { type: "null" }],
             description:
-              "Detail spesifik per kategori. Enrollment: {kelas, email, no_hp, nama_praktikum, kode_mata_kuliah}. Pendaftaran Pengulangan Praktikum: {kelas_asli, kelas_pengulangan, email, praktikum_yang_diulang, kode_mata_kuliah}. Komplain Nilai: {kode_mata_kuliah, nama_praktikum, keterangan}. Kendala Akun: {no_wa, keterangan}. Lainnya: {keterangan}.",
+              "Detail spesifik per kategori. Registrasi Praktikum: {kelas, email, no_hp, nama_praktikum, kode_mata_kuliah}. Pendaftaran Pengulangan Praktikum: {kelas_asli, kelas_pengulangan, email, praktikum_yang_diulang, kode_mata_kuliah}. Komplain Nilai: {kode_mata_kuliah, nama_praktikum, keterangan}. Kendala Akun: {no_wa, keterangan}. Lainnya: {keterangan}.",
           },
           krs_url: {
             anyOf: [{ type: "string" }, { type: "null" }],

@@ -1,7 +1,7 @@
 const supabase = require('../lib/supabase');
 
 const REQUIRED_DETAIL_FIELDS = {
-  'Enrollment': ['kelas', 'email', 'no_hp', 'nama_praktikum', 'kode_mata_kuliah'],
+  'Registrasi Praktikum': ['kelas', 'email', 'no_hp', 'nama_praktikum', 'kode_mata_kuliah'],
   'Pendaftaran Pengulangan Praktikum': ['kelas_asli', 'kelas_pengulangan', 'email', 'praktikum_yang_diulang', 'kode_mata_kuliah'],
   'Komplain Nilai': ['kode_mata_kuliah', 'nama_praktikum', 'keterangan'],
   'Kendala Akun': ['no_wa', 'keterangan'],
