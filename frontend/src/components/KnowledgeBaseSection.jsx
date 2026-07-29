@@ -1,30 +1,62 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import api from "../lib/api.js";
 
-export default function KnowledgeBaseSection({
-  kbList,
-  loadingKb,
-  kbForm,
-  setKbForm,
-  kbSaving,
-  kbError,
-  editingId,
-  handleKbSubmit,
-  handleKbEdit,
-  handleKbDelete,
-  handleKbCancel,
-  kbFormRef,
-}) {
+export default function KnowledgeBaseSection({ kbList, loadingKb, onChanged }) {
+  const [kbForm, setKbForm] = useState({ topik: "", konten: "" });
+  const [kbSaving, setKbSaving] = useState(false);
+  const [kbError, setKbError] = useState("");
+  const [editingId, setEditingId] = useState(null);
   const [searchKb, setSearchKb] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const kbFormRef = useRef(null);
 
-  function handleCancelForm() {
-    handleKbCancel();
-    setShowForm(false);
+  async function handleKbSubmit(e) {
+    e.preventDefault();
+    if (!kbForm.topik.trim() || !kbForm.konten.trim()) return;
+    setKbSaving(true);
+    setKbError("");
+    try {
+      if (editingId) {
+        await api.put(`/knowledge-base/${editingId}`, kbForm);
+      } else {
+        await api.post("/knowledge-base", kbForm);
+      }
+      setKbForm({ topik: "", konten: "" });
+      setEditingId(null);
+      setShowForm(false);
+      await onChanged();
+    } catch {
+      setKbError("Gagal menyimpan. Coba lagi.");
+    } finally {
+      setKbSaving(false);
+    }
   }
 
   function handleEditItem(item) {
-    handleKbEdit(item);
+    setKbForm({ topik: item.topik, konten: item.konten });
+    setEditingId(item.id);
+    setKbError("");
     setShowForm(true);
+    setTimeout(() => {
+      kbFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
+
+  async function handleKbDelete(topik) {
+    if (!confirm(`Hapus topik "${topik}"?`)) return;
+    try {
+      await api.delete(`/knowledge-base/${encodeURIComponent(topik)}`);
+      await onChanged();
+    } catch {
+      alert("Gagal menghapus topik");
+    }
+  }
+
+  function handleCancelForm() {
+    setKbForm({ topik: "", konten: "" });
+    setEditingId(null);
+    setKbError("");
+    setShowForm(false);
   }
 
   const filteredKb = kbList.filter(
@@ -37,7 +69,7 @@ export default function KnowledgeBaseSection({
   return (
     <div>
       {/* Form tambah/edit */}
-      {(showForm || editingId) && (
+      {showForm && (
         <div ref={kbFormRef} className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-5">
           <h2 className="font-semibold text-gray-800 mb-4">
             {editingId ? "Edit Topik" : "Tambah Topik Baru"}
@@ -47,7 +79,7 @@ export default function KnowledgeBaseSection({
               {kbError}
             </div>
           )}
-          <form onSubmit={(e) => { handleKbSubmit(e); if (!kbError) setShowForm(false); }} className="space-y-3">
+          <form onSubmit={handleKbSubmit} className="space-y-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Topik</label>
               <input
@@ -97,7 +129,7 @@ export default function KnowledgeBaseSection({
           placeholder="Cari topik knowledge base..."
           className="flex-1 border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-light"
         />
-        {!showForm && !editingId && (
+        {!showForm && (
           <button
             onClick={() => setShowForm(true)}
             className="flex items-center gap-1.5 bg-primary hover:bg-primary-dark text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap"

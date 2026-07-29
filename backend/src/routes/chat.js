@@ -146,33 +146,31 @@ router.post("/", async (req, res) => {
       return res.json({ reply });
     }
 
-    const sanitizedChoiceMessage = sanitizeToolCalls(choice.message);
-    const firstRound = await jalankanToolCalls(sanitizedChoiceMessage.tool_calls, krsStoragePath);
-
-    let currentMessages = [...conversation, sanitizedChoiceMessage, ...firstRound.messages];
-    let finalChoice;
+    // Loop tunggal: jalankan tool dari balasan model, kirim hasilnya balik ke
+    // model, ulangi selama model masih memanggil tool (maks 5 iterasi untuk
+    // chained tool call). Balasan pertama (choice) sudah dibuat di atas.
+    let currentMessages = [...conversation];
+    let choiceWithTools = choice;
 
     for (let i = 0; i < 5; i++) {
-      const finalResponse = await groqReasoning.chat.completions.create({
+      const sanitized = sanitizeToolCalls(choiceWithTools.message);
+      const round = await jalankanToolCalls(sanitized.tool_calls, krsStoragePath);
+      currentMessages = [...currentMessages, sanitized, ...round.messages];
+
+      const response = await groqReasoning.chat.completions.create({
         model: MODEL_REASONING,
         messages: currentMessages,
         tools: toolDefinitions,
         tool_choice: "auto",
       });
+      choiceWithTools = response.choices[0];
 
-      finalChoice = finalResponse.choices[0];
-
-      if (!finalChoice.message.tool_calls || finalChoice.message.tool_calls.length === 0) {
+      if (!choiceWithTools.message.tool_calls || choiceWithTools.message.tool_calls.length === 0) {
         break;
       }
-
-      const sanitizedFinalMessage = sanitizeToolCalls(finalChoice.message);
-      const round = await jalankanToolCalls(sanitizedFinalMessage.tool_calls, krsStoragePath);
-
-      currentMessages = [...currentMessages, sanitizedFinalMessage, ...round.messages];
     }
 
-    const reply = bersihkanLabelCatatan(finalChoice.message.content) ?? "Maaf, saya tidak dapat memproses permintaan tersebut saat ini. Silakan coba lagi.";
+    const reply = bersihkanLabelCatatan(choiceWithTools.message.content) ?? "Maaf, saya tidak dapat memproses permintaan tersebut saat ini. Silakan coba lagi.";
     await simpanPesan(npm, "assistant", reply);
     res.json({ reply });
   } catch (err) {

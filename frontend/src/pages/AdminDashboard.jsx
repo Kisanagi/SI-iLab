@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../lib/api.js";
 import StatsCards from "../components/StatsCards.jsx";
@@ -15,18 +15,12 @@ export default function AdminDashboard() {
 
   const [kbList, setKbList] = useState([]);
   const [loadingKb, setLoadingKb] = useState(true);
-  const [kbForm, setKbForm] = useState({ topik: "", konten: "" });
-  const [kbSaving, setKbSaving] = useState(false);
-  const [kbError, setKbError] = useState("");
-  const [editingId, setEditingId] = useState(null);
 
   const [activeTab, setActiveTab] = useState("tiket");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("Semua");
 
   const navigate = useNavigate();
-  const kbFormRef = useRef(null);
-  const kbScrollRef = useRef(null);
 
   const selectedTicket = tickets.find((t) => t.id === selectedTicketId) || null;
 
@@ -83,53 +77,6 @@ export default function AdminDashboard() {
     }
   }
 
-  async function handleKbSubmit(e) {
-    e.preventDefault();
-    if (!kbForm.topik.trim() || !kbForm.konten.trim()) return;
-    setKbSaving(true);
-    setKbError("");
-    try {
-      if (editingId) {
-        await api.put(`/knowledge-base/${editingId}`, kbForm);
-      } else {
-        await api.post("/knowledge-base", kbForm);
-      }
-      setKbForm({ topik: "", konten: "" });
-      setEditingId(null);
-      await fetchKb();
-    } catch {
-      setKbError("Gagal menyimpan. Coba lagi.");
-    } finally {
-      setKbSaving(false);
-    }
-  }
-
-  function handleKbEdit(item) {
-    setKbForm({ topik: item.topik, konten: item.konten });
-    setEditingId(item.id);
-    setActiveTab("kb");
-    setTimeout(() => {
-      if (kbScrollRef.current) kbScrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
-      if (kbFormRef.current) kbFormRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 50);
-  }
-
-  async function handleKbDelete(topik) {
-    if (!confirm(`Hapus topik "${topik}"?`)) return;
-    try {
-      await api.delete(`/knowledge-base/${encodeURIComponent(topik)}`);
-      await fetchKb();
-    } catch {
-      alert("Gagal menghapus topik");
-    }
-  }
-
-  function handleKbCancel() {
-    setKbForm({ topik: "", konten: "" });
-    setEditingId(null);
-    setKbError("");
-  }
-
   const filteredTickets = tickets.filter((t) => {
     const matchStatus = filterStatus === "Semua" || t.status === filterStatus;
     const q = searchQuery.toLowerCase();
@@ -175,7 +122,7 @@ export default function AdminDashboard() {
       </header>
 
       {/* Main content */}
-      <main ref={kbScrollRef} className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
 
           {/* Stats */}
@@ -241,16 +188,7 @@ export default function AdminDashboard() {
             <KnowledgeBaseSection
               kbList={kbList}
               loadingKb={loadingKb}
-              kbForm={kbForm}
-              setKbForm={setKbForm}
-              kbSaving={kbSaving}
-              kbError={kbError}
-              editingId={editingId}
-              handleKbSubmit={handleKbSubmit}
-              handleKbEdit={handleKbEdit}
-              handleKbDelete={handleKbDelete}
-              handleKbCancel={handleKbCancel}
-              kbFormRef={kbFormRef}
+              onChanged={fetchKb}
             />
           )}
         </div>
