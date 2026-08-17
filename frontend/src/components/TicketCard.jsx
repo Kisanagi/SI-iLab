@@ -2,7 +2,7 @@ import { useState } from 'react';
 import api from '../lib/api.js';
 import { STATUS_COLOR } from '../lib/ticketStatus.js';
 
-export default function TicketCard({ ticket, onUpdated }) {
+export default function TicketCard({ ticket, onUpdated, onDelete }) {
   const [status, setStatus] = useState(ticket.status);
   const [catatanAdmin, setCatatanAdmin] = useState(ticket.catatan_admin || '');
   const [catatanDraft, setCatatanDraft] = useState('');
@@ -22,16 +22,6 @@ export default function TicketCard({ ticket, onUpdated }) {
       alert('File KRS tidak tersedia');
     } finally {
       setKrsLoading(false);
-    }
-  }
-
-  async function handleDelete() {
-    if (!confirm(`Hapus tiket "${ticket.kode_tiket} — ${ticket.judul}"?`)) return;
-    try {
-      await api.delete(`/tickets/${ticket.id}`);
-      onUpdated();
-    } catch {
-      alert('Gagal menghapus tiket');
     }
   }
 
@@ -222,7 +212,7 @@ export default function TicketCard({ ticket, onUpdated }) {
             )
           )}
           <button
-            onClick={handleDelete}
+            onClick={() => onDelete(ticket)}
             className="text-xs text-red-400 hover:text-red-600 font-medium transition-colors"
           >
             Hapus

@@ -1,16 +1,4 @@
-const STAT_DOT = {
-  Menunggu: "bg-gray-400",
-  Diproses: "bg-blue-500",
-  Selesai: "bg-green-500",
-  Ditolak: "bg-red-500",
-};
-
-const STAT_NUM = {
-  Menunggu: "text-gray-700",
-  Diproses: "text-blue-600",
-  Selesai: "text-green-600",
-  Ditolak: "text-red-600",
-};
+import { STAT_DOT, STAT_NUM } from "../lib/ticketStatus.js";
 
 export default function StatsCards({ stats }) {
   return (

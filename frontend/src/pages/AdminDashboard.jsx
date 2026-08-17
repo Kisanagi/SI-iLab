@@ -219,7 +219,7 @@ export default function AdminDashboard() {
               </button>
             </div>
             <div className="p-5">
-              <TicketCard ticket={selectedTicket} onUpdated={fetchTickets} />
+              <TicketCard ticket={selectedTicket} onUpdated={fetchTickets} onDelete={handleDeleteTicket} />
             </div>
           </div>
         </div>

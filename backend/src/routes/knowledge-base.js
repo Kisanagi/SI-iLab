@@ -53,14 +53,14 @@ router.put('/:id', authMiddleware, async (req, res) => {
   res.json(data);
 });
 
-// DELETE /knowledge-base/:topik — hapus topik (admin only)
-router.delete('/:topik', authMiddleware, async (req, res) => {
-  const { topik } = req.params;
+// DELETE /knowledge-base/:id — hapus topik by id (admin only)
+router.delete('/:id', authMiddleware, async (req, res) => {
+  const { id } = req.params;
 
   const { error } = await supabase
     .from('knowledge_base')
     .delete()
-    .eq('topik', decodeURIComponent(topik));
+    .eq('id', id);
 
   if (error) return res.status(500).json({ error: 'Gagal menghapus knowledge base' });
   res.json({ message: 'Topik berhasil dihapus' });

@@ -1,5 +1,5 @@
 const supabase = require('./supabase');
-const { groqVision } = require('./groq');
+const { groq: groqVision } = require('./groq');
 const pdfParse = require('pdf-parse');
 
 const MODEL_VISION = process.env.MODEL_VISION;

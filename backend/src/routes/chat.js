@@ -1,10 +1,20 @@
 const { Router } = require("express");
-const { groqReasoning } = require("../lib/groq");
+const { groq: groqReasoning } = require("../lib/groq");
 const { toolDefinitions, toolHandlers } = require("../tools/index");
 const { SYSTEM_PROMPT } = require("../prompts/systemPrompt");
-const { fetchKnowledgeBase } = require("../lib/knowledgeBase");
 const { processFile, uploadKrsToStorage } = require("../lib/fileUpload");
-const { simpanPesan } = require("../lib/chatSession");
+const supabase = require("../lib/supabase");
+
+async function fetchKnowledgeBase() {
+  const { data, error } = await supabase.from("knowledge_base").select("topik, konten").order("topik", { ascending: true });
+  if (error || !data || data.length === 0) return "";
+  return "\n\nKNOWLEDGE BASE:\n" + data.map((k) => `- ${k.topik}: ${k.konten}`).join("\n");
+}
+
+async function simpanPesan(npm, role, content) {
+  if (!npm) return;
+  await supabase.from("chat_sessions").insert({ npm, role, content });
+}
 
 const router = Router();
 const MODEL_REASONING = process.env.MODEL_REASONING;

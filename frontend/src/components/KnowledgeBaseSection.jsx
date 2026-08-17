@@ -42,10 +42,10 @@ export default function KnowledgeBaseSection({ kbList, loadingKb, onChanged }) {
     }, 50);
   }
 
-  async function handleKbDelete(topik) {
-    if (!confirm(`Hapus topik "${topik}"?`)) return;
+  async function handleKbDelete(item) {
+    if (!confirm(`Hapus topik "${item.topik}"?`)) return;
     try {
-      await api.delete(`/knowledge-base/${encodeURIComponent(topik)}`);
+      await api.delete(`/knowledge-base/${item.id}`);
       await onChanged();
     } catch {
       alert("Gagal menghapus topik");
@@ -187,7 +187,7 @@ export default function KnowledgeBaseSection({ kbList, loadingKb, onChanged }) {
                           Edit
                         </button>
                         <button
-                          onClick={() => handleKbDelete(item.topik)}
+                          onClick={() => handleKbDelete(item)}
                           className="text-xs text-red-400 hover:text-red-600 font-medium transition-colors"
                         >
                           Hapus
